@@ -1,0 +1,58 @@
+
+from math import sin, cos
+import pi3d, os
+import math
+import numpy as np
+import time
+import krpc
+
+
+red = (1.0, 0.0 , 0.0, 1.0)
+orange = (1.0, 0.7 , 0.0, 1.0)
+green = (0.0, 1.0 , 0.0, 1.0)
+blue = (0.0, 0.0 , 1.0, 1.0)
+white = (1.0, 1.0 , 1.0, 1.0)
+gray = (0.5,0.5,0.5, 1.0)
+
+class TextData(object):
+    speed = 0
+
+
+text_data = TextData()
+
+class template:
+    def __init__(self, controller):
+        self.controller = controller
+        backimg = pi3d.Texture('assets/page_nav.png')
+        self.back = pi3d.ImageSprite(texture = backimg, shader = controller.flatsh, w=1280, h=720)
+        self.back.position(0, 0, 2)   
+
+
+        self.text = pi3d.PointText(controller.pointFont, controller.CAMERA2D, max_chars=400, point_size=64, )
+        
+        espace = 0.40
+        newtxt = pi3d.TextBlock(30, 308, 0.1, 0.0, 10, data_obj=text_data, attr="speed",
+                text_format="{:2.1f}", size=0.5, spacing="C", space=espace, justify = 1,
+                colour=blue)
+        self.text.add_text_block(newtxt)
+
+        self.alt_indicator = pi3d.Plane(w=10, h=400, x=347, y=0)
+
+        
+
+    def show(self, streams, first_call):
+        self.controller.DISPLAY.clear()
+        if first_call:
+            self.controller.DISPLAY.add_sprites(self.back)
+        
+        text_data.speed = int(streams.speed())
+
+    def remove_sprite(self):
+        self.controller.DISPLAY.remove_sprites(self.back)
+
+
+
+
+        
+        
+        
