@@ -87,6 +87,18 @@ class Streams:
                 self.resources[f'{resource}_max'] = conn.add_stream(vessel.resources.max, resource)
         print("ressources created")
 
+        self.vesselApoapsis = conn.add_stream(getattr, vessel.orbit, 'apoapsis_altitude')
+        self.vesselPeriapsis = conn.add_stream(getattr, vessel.orbit, 'periapsis_altitude')
+        self.vesselTimeToApoapsis = conn.add_stream(getattr, vessel.orbit, 'time_to_apoapsis')
+        self.vesselTimeToPeriapsis = conn.add_stream(getattr, vessel.orbit, 'time_to_periapsis')
+        self.vesselApoapsis = conn.add_stream(getattr, vessel.orbit, 'apoapsis_altitude')
+        self.vesselInclination = conn.add_stream(getattr, vessel.orbit, 'inclination')
+        self.vesselSMajA = conn.add_stream(getattr, vessel.orbit, 'semi_major_axis')
+        self.vesselSMinA = conn.add_stream(getattr, vessel.orbit, 'semi_minor_axis')
+        self.vesselEccentricAnomaly = conn.add_stream(getattr, vessel.orbit, 'eccentric_anomaly')
+        self.bodyOrbitingRadius = vessel.orbit.body.equatorial_radius
+ 
+
         
 
 

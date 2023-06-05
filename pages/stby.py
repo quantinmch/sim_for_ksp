@@ -4,13 +4,7 @@ import math
 import numpy as np
 import time
 import krpc
-import RPi.GPIO as GPIO
-GPIO.setmode(GPIO.BCM)
 from assets.encoder import Encoder
-e1 = Encoder(17, 27)
-
-e1.setValue(100)
-    
 
 class TextData(object):
     ip = "N/A"
@@ -44,11 +38,11 @@ class Stby:
         self.antiBounce = 0
         
 
-    def show(self, streams, first_call):
+    def show(self, streams, first_call, encoder):
         self.controller.DISPLAY.clear()
         self.str1.draw()
         if streams == True:
-            text_data.set_ip = "192.168.0." + str(e1.getValue())
+            text_data.set_ip = "192.168.0." + str((encoder.getValue()+100))
             with open("IP.txt") as f: #in read mode, not in write mode, careful
                 ip=f.readlines()
                 text_data.ip = str(ip[0])
@@ -57,7 +51,7 @@ class Stby:
 
             if GPIO.event_detected(4) and self.antiBounce > 15:
                 with open("IP.txt","w") as f: #in write mode
-                    f.write("{}".format("192.168.0." + str(e1.getValue())))
+                    f.write("{}".format("192.168.0." + str(encoder.getValue()+100)))
                 self.antiBounce = 0
 
             if self.antiBounce < 20:

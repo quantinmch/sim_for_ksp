@@ -106,7 +106,7 @@ class Pwr:
 
         
 
-    def show(self, streams, first_call):
+    def show(self, streams, first_call, encoder):
         self.controller.DISPLAY.clear()
         if first_call:
             self.controller.DISPLAY.add_sprites(self.back)

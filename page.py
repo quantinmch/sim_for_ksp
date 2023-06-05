@@ -5,12 +5,18 @@ import numpy as np
 import time
 import krpc
 
+import RPi.GPIO as GPIO
+GPIO.setmode(GPIO.BCM)
+from assets.encoder import Encoder
+e1 = Encoder(17, 27)
+
 from pages.power import Pwr
 from pages.navball import Nav
 from pages.propellant import Prop
 from pages.stby import Stby
+from pages.orbit import Orb
 
-pages_list = [Nav, Prop, Stby, Pwr]
+pages_list = [Nav, Prop, Stby, Pwr, Orb]
 class TextData(object):
     message = ""
 
@@ -71,9 +77,10 @@ class Pages:
         if self.prev_page != page:
             if self.prev_page != None:
                 self.prev_page.remove_sprite()
-            page.show(streams, True)
+            e1.setValue(0)
+            page.show(streams, True, e1)
         else:
-            page.show(streams, False)
+            page.show(streams, False, e1)
         self.prev_page = page
 
 

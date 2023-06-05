@@ -45,7 +45,6 @@ while DISPLAY.loop_running():
     try:
         if app.game_connected == False:
             disp.draw_page('Stby', True) 
-            #print(msgQ.get())
 
         elif app.game_scene_is_flight():
             try:
@@ -69,10 +68,10 @@ while DISPLAY.loop_running():
                     
             except krpc.error.RPCError:
                 print("ERROR : MODE QUIT")
-                disp.draw_page('Stby', True) 
+                disp.draw_page('Stby', False) 
         else:
             print("ERROR : Game connected but game scene is not flight")
-            disp.draw_page('Stby', True) 
+            disp.draw_page('Stby', False) 
 
     except Exception as e: 
         print(e)

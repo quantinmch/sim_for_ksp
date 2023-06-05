@@ -48,7 +48,7 @@ class Buttons:
         elif GPIO.event_detected(16):
             return 'Pwr'
         elif GPIO.event_detected(20):
-            return 'Rtry'
+            return 'Stby'
         elif GPIO.event_detected(21):
             return 'Orb'
         else:
