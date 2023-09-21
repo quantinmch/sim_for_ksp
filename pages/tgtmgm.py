@@ -185,7 +185,7 @@ class TgtMgm:
         self.updateMenu()
 
 
-    def show(self, streams, first_call, encoder):
+    def show(self, streams, first_call, encoder=0):
         self.controller.DISPLAY.clear()
         if first_call:
             self.controller.DISPLAY.add_sprites(self.back)

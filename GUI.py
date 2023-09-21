@@ -1,6 +1,8 @@
 from multiprocessing import Process
 import krpc
 from functools import partial
+import time
+from msgbox import log
 
 existingNodes = False
 
@@ -239,15 +241,10 @@ class Streams:
         else:
             self.ElectricCharge_flow = 0
             self.prev_EC = temp
-
-        
-
-
-
             
 
 class Application:
-    def __init__(self, root, msgQ):
+    def __init__(self, root):
         self.conn = None
         self.vessel = None
  
@@ -256,31 +253,29 @@ class Application:
         self.game_connected = False
         self.vessel_connected = False
 
-    def connect(self, mQ):
-        mQ.put((0, 'GUI Connecting to the game server....'))
+        self.game_scene_flight = False
+
+    def connect(self):
+        log.append('GUI Connecting to the game server....')
         if self.game_connected is False:
-            with open("IP.txt") as f: #in read mode, not in write mode, careful
-                address=f.readlines()
-
-            f.close
-
             try:
-                self.conn = krpc.connect(name='MFCD V0.4', address = address[0], rpc_port=50000, stream_port=50001)
-                mQ.put((0, 'GUI Connected to the game server'))
+                self.conn = krpc.connect(name='MFCD V0.4', address = "192.168.1.4", rpc_port=50000, stream_port=50001)
+                log.append('GUI Connected to the game server')
                 self.game_connected = True
             except ConnectionRefusedError:
-                mQ.put((1, 'GUI Could not connect to the game server'))
+                log.append('GUI Could not connect to the game server')
+                pass
 
         if self.game_connected and self.vessel_connected is False:
             if self.conn.krpc.current_game_scene == self.conn.krpc.current_game_scene.flight:
-                mQ.put((0, 'GUI Connecting to the vessel....'))
+                log.append('GUI Connecting to the vessel....')
                 try:
                     self.vessel = self.conn.space_center.active_vessel
-                    mQ.put((0, 'GUI Linked to ' + self.vessel.name))
+                    log.append('GUI Linked to ' + self.vessel.name)
                     self.game_scene_flight = True
                     self.vessel_connected = True   
                 except krpc.client.RPCError:
-                    mQ.put((1, 'GUI Could not connect to a vessel'))
+                    log.append('GUI Could not connect to a vessel')
                     pass
             else:
                 self.game_scene_flight = False
@@ -297,12 +292,25 @@ class Application:
     def get_streams(self):
         return self.streams
 
-    def game_scene_is_flight(self):
-        return self.game_scene_flight
+    def ready(self):
+        if self.game_scene_flight and hasattr(self, "streams"):
+            return True
+        else:
+            return False
 
+    def loop(self):
+        stage_prev = None
 
-        
+        while True:
+            if self.ready():
+                if self.streams.current_stage() != stage_prev:
+                    print("stage change")
+                    self.streams.ressources_recreate() 
+                stage_prev = self.streams.current_stage()
+                self.streams.update()
+
+                self.streams.update_flow()
+            time.sleep(25/1000)
             
-        
 
     
