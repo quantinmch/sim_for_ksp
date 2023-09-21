@@ -5,6 +5,7 @@ import numpy as np
 import time
 import krpc
 from assets.encoder import Encoder
+import RPi.GPIO as GPIO
 
 class TextData(object):
     ip = "N/A"
@@ -36,6 +37,9 @@ class Stby:
                 colour=(0.5, 0.5 , 1.0, 1.0))
         self.text.add_text_block(newtxt)
         self.antiBounce = 0
+
+        
+
         
 
     def show(self, streams, first_call, encoder):

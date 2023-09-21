@@ -2,7 +2,7 @@ from multiprocessing import Process
 import krpc
 from functools import partial
 
-
+existingNodes = False
 
 class Streams:
     def __init__(self, conn, vessel):
@@ -11,6 +11,9 @@ class Streams:
         self.conn = conn
         self.vessel = vessel
 
+        self.UT = conn.add_stream(getattr, conn.space_center, 'ut')
+       
+        self.orbits = {}
 
         srfRefFrame = vessel.orbit.body.reference_frame
         
@@ -19,7 +22,8 @@ class Streams:
         self.roll = conn.add_stream(getattr, vessel.flight(),'roll')
         self.g_force = conn.add_stream(getattr, vessel.flight(), 'g_force')
 
-        self.target = conn.add_stream(getattr, conn.space_center, 'target_vessel')
+        self.targetVessel = conn.add_stream(getattr, conn.space_center, 'target_vessel')
+        self.targetBody = conn.add_stream(getattr, conn.space_center, 'target_body')
 
         self.thrust = conn.add_stream(getattr, vessel, 'thrust')
         self.max_thrust = conn.add_stream(getattr, vessel, 'max_thrust')
@@ -33,7 +37,9 @@ class Streams:
         self.gears = conn.add_stream(getattr, vessel.control, 'gear')
 
         self.nodes = conn.add_stream(getattr, vessel.control, 'nodes')
-
+        self.nodes.add_callback(self.nodes_update)
+        self.nodes.start()
+        
         self.current_stage = conn.add_stream(getattr, vessel.control, 'current_stage')
 
 
@@ -87,20 +93,92 @@ class Streams:
                 self.resources[f'{resource}_max'] = conn.add_stream(vessel.resources.max, resource)
         print("ressources created")
 
+        self.vesselOrbit = vessel.orbit
         self.vesselApoapsis = conn.add_stream(getattr, vessel.orbit, 'apoapsis_altitude')
         self.vesselPeriapsis = conn.add_stream(getattr, vessel.orbit, 'periapsis_altitude')
         self.vesselTimeToApoapsis = conn.add_stream(getattr, vessel.orbit, 'time_to_apoapsis')
         self.vesselTimeToPeriapsis = conn.add_stream(getattr, vessel.orbit, 'time_to_periapsis')
-        self.vesselApoapsis = conn.add_stream(getattr, vessel.orbit, 'apoapsis_altitude')
         self.vesselInclination = conn.add_stream(getattr, vessel.orbit, 'inclination')
         self.vesselSMajA = conn.add_stream(getattr, vessel.orbit, 'semi_major_axis')
         self.vesselSMinA = conn.add_stream(getattr, vessel.orbit, 'semi_minor_axis')
         self.vesselEccentricAnomaly = conn.add_stream(getattr, vessel.orbit, 'eccentric_anomaly')
+        self.vesselEccentricity = conn.add_stream(getattr, vessel.orbit, 'eccentricity')
+        self.vesselNextOrbit = conn.add_stream(getattr, vessel.orbit, 'next_orbit')
+        self.vesselTimeToSOIChange = conn.add_stream(getattr, vessel.orbit, 'time_to_soi_change')
         self.bodyOrbitingRadius = vessel.orbit.body.equatorial_radius
- 
+        self.bodyOrbiting =  conn.add_stream(getattr, vessel.orbit.body, 'name')
+
+        self.nextOrbit = conn.add_stream(getattr, self.vesselOrbit, 'next_orbit')
+        self.nextOrbit.add_callback(self.orbits_update)
+        self.nextOrbit.start()
+
+        dockingcam = conn.docking_camera
+
+        if dockingcam.available:
+            dockingport = vessel.parts.with_tag('dp')[0]
+            camera = dockingcam.camera(dockingport)
+        else:
+            print("DOCKING CAMERA NOT AVAILABLE")
 
         
+        
 
+    def trueAnomalyAt(self, time):
+        return self.vesselOrbit.true_anomaly_at_ut(time)
+
+    def eccentricAnomalyAt(self, time):
+        return self.vesselOrbit.eccentric_anomaly_at_ut(time)
+
+    def nodes_update(self, nodes):
+        vessel = self.vessel
+        conn = self.conn
+        self.nodesOrbits = {}
+
+        print("NODE CHANGE")
+        print(len(nodes))
+
+        self.nodesNb = len(nodes)
+
+        if len(nodes) > 0:
+            for orbitNb in range(len(nodes)):
+                self.nodesOrbits[f'nodeOrbit{orbitNb}'] = conn.add_stream(getattr, nodes[orbitNb], 'orbit')
+                self.nodesOrbits[f'nodeOrbit{orbitNb}_apoapsis'] = conn.add_stream(getattr, nodes[orbitNb].orbit, 'apoapsis_altitude')
+                self.nodesOrbits[f'nodeOrbit{orbitNb}_ut'] = conn.add_stream(getattr, nodes[orbitNb], 'ut')
+                
+
+            
+
+    def orbits_update(self, orbit):
+        vessel = self.vessel
+        conn = self.conn
+        print("ORBIT NUMBER CHANGE")
+        
+        self.secondaryOrbits = {}
+
+        if orbit != None:
+            prevOrbit = self.vesselOrbit
+            orbitCreating = orbit
+            orbitNb = 1
+            while orbitCreating != None:
+                self.secondaryOrbits[f'orbit{orbitNb}_apoapsis'] = conn.add_stream(getattr, orbitCreating, 'apoapsis_altitude')
+                self.secondaryOrbits[f'orbit{orbitNb}_periapsis'] = conn.add_stream(getattr, orbitCreating, 'periapsis_altitude')
+                self.secondaryOrbits[f'orbit{orbitNb}_SMajA'] = conn.add_stream(getattr, orbitCreating, 'semi_major_axis')
+                self.secondaryOrbits[f'orbit{orbitNb}_SMinA'] = conn.add_stream(getattr, orbitCreating, 'semi_minor_axis')
+                self.secondaryOrbits[f'orbit{orbitNb}_eccentricity'] = conn.add_stream(getattr, orbitCreating, 'eccentricity')
+                self.secondaryOrbits[f'orbit{orbitNb}_SOI_in'] = conn.add_stream(getattr, prevOrbit, 'time_to_soi_change')
+                self.secondaryOrbits[f'orbit{orbitNb}_SOI_change'] = conn.add_stream(getattr, orbitCreating, 'time_to_soi_change')
+                self.secondaryOrbits[f'orbit{orbitNb}_body'] = conn.add_stream(getattr, orbitCreating.body, 'name')
+                prevOrbit = orbitCreating
+                orbitCreating = orbitCreating.next_orbit
+                print("Created orbit number ", orbitNb)
+                orbitNb += 1
+            self.secondaryOrbits[f'numberOfOrbits'] = orbitNb-1
+
+        else:
+            del self.secondaryOrbits
+            print("No more secondary orbits. Deleted.")
+
+        
 
     def ressources_recreate(self):
         vessel = self.vessel
@@ -118,22 +196,6 @@ class Streams:
         else:
             self.solar_panel_number = 0
 
-        '''
-        try:
-            for stream in self.resources:
-                self.resources[f'{stream}'].remove()
-                print(f'deleted {stream} stream')
-
-        except Exception as e :
-            print(e)
-
-        self.resources = {}
-        for resource in vessel.resources.names:
-            if resource not in ('Food', 'Water', 'Oxygen', 'CarbonDioxide', 'Waste', 'WasteWater'):
-                self.resources[f'{resource}_amount'] = conn.add_stream(vessel.resources.amount, resource)
-                self.resources[f'{resource}_max'] = conn.add_stream(vessel.resources.max, resource)
-        print("ressources created")
-'''
         if self.try_launch_clamp == True:
             try:
                 if str(vessel.parts.launch_clamps) != "[]":
@@ -167,6 +229,8 @@ class Streams:
             else:
                 self.engine_left_overheat = False
 
+            
+
     def update_flow(self):
         temp = self.resources['ElectricCharge_amount']()
         if self.prev_EC != None:
@@ -175,7 +239,6 @@ class Streams:
         else:
             self.ElectricCharge_flow = 0
             self.prev_EC = temp
-            print("prev_ec don't exist")
 
         
 
@@ -198,6 +261,8 @@ class Application:
         if self.game_connected is False:
             with open("IP.txt") as f: #in read mode, not in write mode, careful
                 address=f.readlines()
+
+            f.close
 
             try:
                 self.conn = krpc.connect(name='MFCD V0.4', address = address[0], rpc_port=50000, stream_port=50001)

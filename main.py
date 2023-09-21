@@ -11,6 +11,12 @@ from page import Pages
 from inputs import Buttons
 from GUI import Application
 
+import serial
+import sys
+
+#arduino = serial.Serial('/dev/ttyUSB0', 9600, timeout=0.01)
+#arduino.reset_input_buffer()
+
 msgQ = Queue(0)
 
 DISPLAY = pi3d.Display.create( frames_per_second=30, use_pygame=True)
@@ -37,14 +43,12 @@ while DISPLAY.loop_running():
     
     if temp != None:
         current_page = temp
-
-    if app.game_connected == False or app.vessel_connected == False:
-        app.connect(msgQ)
         
 
     try:
-        if app.game_connected == False:
+        if app.game_connected == False or app.vessel_connected == False:
             disp.draw_page('Stby', True) 
+            app.connect(msgQ)
 
         elif app.game_scene_is_flight():
             try:
@@ -73,11 +77,18 @@ while DISPLAY.loop_running():
             print("ERROR : Game connected but game scene is not flight")
             disp.draw_page('Stby', False) 
 
+    
+    
+
     except Exception as e: 
+        print("Connection error : ")
         print(e)
         disp.draw_page('Stby', True)
         app.disconnect()
         app.game_connected = False
         app.vessel_connected = False
+
+
+    
 
     

@@ -15,8 +15,10 @@ from pages.navball import Nav
 from pages.propellant import Prop
 from pages.stby import Stby
 from pages.orbit import Orb
+from pages.tgtmgm import TgtMgm
 
-pages_list = [Nav, Prop, Stby, Pwr, Orb]
+pages_list = [Nav, Prop, Stby, Pwr, Orb, TgtMgm]
+
 class TextData(object):
     message = ""
 

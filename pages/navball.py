@@ -221,7 +221,7 @@ class Nav:
         else:
             self.mnv_txt.colouring.set_colour(gray)
 
-        if streams.target() != None:
+        if streams.targetVessel() != None:
             self.tgt_txt.colouring.set_colour(blue)
         else:
             self.tgt_txt.colouring.set_colour(gray)
