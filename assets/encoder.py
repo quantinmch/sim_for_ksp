@@ -68,3 +68,5 @@ class Encoder:
 
     def setValue(self, value):
         self.value = int(value)
+
+encoder = Encoder(17,27)

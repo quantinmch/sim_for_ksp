@@ -2,9 +2,23 @@ from multiprocessing import Process
 import krpc
 from functools import partial
 import time
-from msgbox import log
+from msgbox import log, cmd
 
 existingNodes = False
+
+IP = "192.168.1.4"
+
+class Part:
+    name = None
+    tag = None
+    parent = None
+    children = None
+    attachement = None
+    stage = None
+    decouple_stage = None
+    temperature = 0
+    max_temp = 0
+    max_skin_temp = 0
 
 class Streams:
     def __init__(self, conn, vessel):
@@ -12,6 +26,50 @@ class Streams:
         self.try_launch_clamp = True
         self.conn = conn
         self.vessel = vessel
+        self.bodies = self.conn.space_center.bodies
+        self.vessels = self.conn.space_center.vessels
+
+        self.allPartsList = []
+        for part in vessel.parts.all:
+            temp = Part
+
+            temp.name = part.title
+            temp.tag = part.tag
+            if part.parent != None: temp.parent = part.parent
+            if part.children != None: temp.children = part.children
+
+            if part.axially_attached != None:
+                temp.attachement = "axial"
+            elif part.radially_attached != None:
+                temp.attachement = "radial"
+            else:
+                temp.attachement = None
+
+            temp.stage = part.stage
+            temp.decouple_stage = part.decouple_stage
+            temp.max_temp = part.max_temperature
+            temp.max_skin_temp = part.max_skin_temperature
+
+            self.allPartsList.append(temp)
+
+        print("added", len(self.allPartsList), "parts to index")
+
+        self.vesselsNames = []
+        for vessel in self.vessels :
+            if vessel != self.vessel:
+                self.vesselsNames.append(vessel.name)
+
+        self.dockingPortsDict = {}
+        for dockingPort in vessel.parts.docking_ports:
+            if str(dockingPort.state) != "DockingPortState.docked":
+                self.dockingPortsDict[dockingPort.part.title] = dockingPort.part
+        self.dockingPortsDict[vessel.parts.root.title] = vessel.parts.root
+        
+
+        self.partControlling = conn.add_stream(getattr, vessel.parts, 'controlling')
+        self.partControlling.add_callback(self.control_update)
+        self.partControlling.start()
+        
 
         self.UT = conn.add_stream(getattr, conn.space_center, 'ut')
        
@@ -26,6 +84,7 @@ class Streams:
 
         self.targetVessel = conn.add_stream(getattr, conn.space_center, 'target_vessel')
         self.targetBody = conn.add_stream(getattr, conn.space_center, 'target_body')
+        self.targetDockingPort = conn.add_stream(getattr, conn.space_center, 'target_docking_port')
 
         self.thrust = conn.add_stream(getattr, vessel, 'thrust')
         self.max_thrust = conn.add_stream(getattr, vessel, 'max_thrust')
@@ -37,6 +96,7 @@ class Streams:
         self.sas = conn.add_stream(getattr, vessel.control, 'sas')
         self.lights = conn.add_stream(getattr, vessel.control, 'lights')
         self.gears = conn.add_stream(getattr, vessel.control, 'gear')
+        self.brakes = conn.add_stream(getattr, vessel.control, 'brakes')
 
         self.nodes = conn.add_stream(getattr, vessel.control, 'nodes')
         self.nodes.add_callback(self.nodes_update)
@@ -49,51 +109,13 @@ class Streams:
         self.speed = conn.add_stream(getattr, vessel.flight(srfRefFrame), 'speed')
         self.altitude = conn.add_stream(getattr, vessel.flight(), 'surface_altitude')
 
-        try:
-            engineC = vessel.parts.with_tag('engineC')[0]
-            self.engine_center_active = conn.add_stream(getattr, engineC.engine, 'active')
-            self.engine_center_throttle = conn.add_stream(getattr, engineC.engine, 'throttle')
-            self.engine_center_gimballed = conn.add_stream(getattr, engineC.engine, 'gimballed')
+        self.prograde = conn.add_stream(getattr, vessel.flight(srfRefFrame), 'prograde')
 
-            self.engine_center_max_temp = conn.add_stream(getattr, engineC, 'max_skin_temperature')
-            self.engine_center_temp = conn.add_stream(getattr, engineC, 'skin_temperature')
-            self.engine_center_overheat = False
-
-        except Exception as e:
-            self.engine_center_active = None
-
-        try:
-            engineL = vessel.parts.with_tag('engineL')[0]
-            self.engine_left_active = conn.add_stream(getattr, engineL.engine, 'active')
-            self.engine_left_throttle = conn.add_stream(getattr, engineL.engine, 'throttle')
-            self.engine_left_gimballed = conn.add_stream(getattr, engineL.engine, 'gimballed')
-
-            self.engine_left_max_temp = conn.add_stream(getattr, engineL, 'max_skin_temperature')
-            self.engine_left_temp = conn.add_stream(getattr, engineL, 'skin_temperature')
-            self.engine_left_overheat = False
-
-        except Exception as e:
-            self.engine_left_active = None
-
-        try:
-            engineR = vessel.parts.with_tag('engineR')[0]
-            self.engine_right_active = conn.add_stream(getattr, engineR.engine, 'active')
-            self.engine_right_throttle = conn.add_stream(getattr, engineR.engine, 'throttle')
-            self.engine_right_gimballed = conn.add_stream(getattr, engineR.engine, 'gimballed')
-
-            self.engine_right_max_temp = conn.add_stream(getattr, engineR, 'max_skin_temperature')
-            self.engine_right_temp = conn.add_stream(getattr, engineR, 'skin_temperature')
-            self.engine_right_overheat = False
-
-        except Exception as e:
-            self.engine_right_active = None
-
-        self.resources = {}
-        for resource in vessel.resources.names:
-            if resource not in ('Food', 'Water', 'Oxygen', 'CarbonDioxide', 'Waste', 'WasteWater'):
-                self.resources[f'{resource}_amount'] = conn.add_stream(vessel.resources.amount, resource)
-                self.resources[f'{resource}_max'] = conn.add_stream(vessel.resources.max, resource)
-        print("ressources created")
+        self.deltaSpeed = 0
+        self.contact = False
+        
+        self.createEngines()
+        self.createLdgGears()
 
         self.vesselOrbit = vessel.orbit
         self.vesselApoapsis = conn.add_stream(getattr, vessel.orbit, 'apoapsis_altitude')
@@ -113,17 +135,127 @@ class Streams:
         self.nextOrbit = conn.add_stream(getattr, self.vesselOrbit, 'next_orbit')
         self.nextOrbit.add_callback(self.orbits_update)
         self.nextOrbit.start()
+        
 
-        dockingcam = conn.docking_camera
+        self.highG = False
+        self.lowAlt = False
+        self.tgtLock = False
+        self.engineOVH = False
+        self.meco = False
+        self.gearsBroken = False
 
-        if dockingcam.available:
-            dockingport = vessel.parts.with_tag('dp')[0]
-            camera = dockingcam.camera(dockingport)
+    def createLdgGears(self):
+        self.ldgGearData = []
+
+        for ldgIdx in range(3):
+            ldgGearDict = {}
+
+            try:
+                if ldgIdx == 1:
+                    tag = 'ldgFront'
+                elif ldgIdx == 2:
+                    tag = 'ldgRight'
+                else:
+                    tag = 'ldgLeft'
+
+                ldgGear = self.vessel.parts.with_tag(tag)[0]
+                ldgGearDict["id"] = str(ldgIdx)
+                
+            except:
+                try:
+                    ldgGear = self.vessel.parts.wheels[ldgIdx].part
+                    ldgGearDict["id"] = str(ldgIdx)
+                except:
+                    ldgGearDict["id"] = None
+            
+            if ldgGearDict["id"] != None:
+                ldgGearDict["state"] = self.conn.add_stream(getattr, ldgGear.wheel, 'state')
+                ldgGearDict["grounded"] = self.conn.add_stream(getattr, ldgGear.wheel, 'grounded')
+
+            self.ldgGearData.append(ldgGearDict)
+
+    def createEngines(self):
+        try:
+            try:
+                engineC = self.vessel.parts.with_tag('engineC')[0]
+            except:
+                engineC = self.vessel.parts.engines[0].part
+
+            self.engine_center_active = self.conn.add_stream(getattr, engineC.engine, 'active')
+            self.engine_center_throttle = self.conn.add_stream(getattr, engineC.engine, 'throttle')
+            self.engine_center_gimballed = self.conn.add_stream(getattr, engineC.engine, 'gimballed')
+
+            self.engine_center_max_temp = self.conn.add_stream(getattr, engineC, 'max_skin_temperature')
+            self.engine_center_temp = self.conn.add_stream(getattr, engineC, 'skin_temperature')
+            self.engine_center_overheat = False
+
+        except:
+            self.engine_center_active = None
+
+        try:
+            try:
+                engineL = self.vessel.parts.with_tag('engineL')[0]
+            except:
+                engineL = self.vessel.parts.engines[1].part
+            
+            self.engine_left_active = self.conn.add_stream(getattr, engineL.engine, 'active')
+            self.engine_left_throttle = self.conn.add_stream(getattr, engineL.engine, 'throttle')
+            self.engine_left_gimballed = self.conn.add_stream(getattr, engineL.engine, 'gimballed')
+
+            self.engine_left_max_temp = self.conn.add_stream(getattr, engineL, 'max_skin_temperature')
+            self.engine_left_temp = self.conn.add_stream(getattr, engineL, 'skin_temperature')
+            self.engine_left_overheat = False
+
+        except:
+            self.engine_left_active = None
+
+        try:
+            try:
+                engineR = self.vessel.parts.with_tag('engineR')[0]
+            except:
+                engineR = self.vessel.parts.engines[2].part
+
+            self.engine_right_active = self.conn.add_stream(getattr, engineR.engine, 'active')
+            self.engine_right_throttle = self.conn.add_stream(getattr, engineR.engine, 'throttle')
+            self.engine_right_gimballed = self.conn.add_stream(getattr, engineR.engine, 'gimballed')
+
+            self.engine_right_max_temp = self.conn.add_stream(getattr, engineR, 'max_skin_temperature')
+            self.engine_right_temp = self.conn.add_stream(getattr, engineR, 'skin_temperature')
+            self.engine_right_overheat = False
+
+        except:
+            self.engine_right_active = None
+
+    def setTarget(self, target):
+        if target in self.vesselsNames:
+            for vessel in self.vessels :
+                if vessel.name == target:
+                    self.conn.space_center.target_vessel = vessel
+
+            print("Selected ", target, " as target")
+        elif target in self.bodies:
+            self.conn.space_center.target_body = self.bodies[target]
+            print("Selected ", target, " as target")
         else:
-            print("DOCKING CAMERA NOT AVAILABLE")
+            print("Error in target selection")
 
-        
-        
+    def control_update(self, partControlling):
+        if self.vessel.parts.controlling.docking_port != None:
+            self.controllerIsDockingPort = True
+            self.dockingPortControlling = partControlling.docking_port
+            self.selectPortState = self.conn.add_stream(getattr, self.dockingPortControlling, 'state')
+        else:
+            self.controllerIsDockingPort = False
+            
+            
+
+
+    def setRefPart(self, refPart):
+        if refPart in self.dockingPortsDict:
+            self.vessel.parts.controlling = self.dockingPortsDict[refPart]
+            self.partControlling = self.conn.add_stream(getattr, self.vessel.parts, 'controlling')
+            log.append('Selected ' + refPart + 'as reference part')
+       
 
     def trueAnomalyAt(self, time):
         return self.vesselOrbit.true_anomaly_at_ut(time)
@@ -145,10 +277,7 @@ class Streams:
             for orbitNb in range(len(nodes)):
                 self.nodesOrbits[f'nodeOrbit{orbitNb}'] = conn.add_stream(getattr, nodes[orbitNb], 'orbit')
                 self.nodesOrbits[f'nodeOrbit{orbitNb}_apoapsis'] = conn.add_stream(getattr, nodes[orbitNb].orbit, 'apoapsis_altitude')
-                self.nodesOrbits[f'nodeOrbit{orbitNb}_ut'] = conn.add_stream(getattr, nodes[orbitNb], 'ut')
-                
-
-            
+                self.nodesOrbits[f'nodeOrbit{orbitNb}_ut'] = conn.add_stream(getattr, nodes[orbitNb], 'ut')         
 
     def orbits_update(self, orbit):
         vessel = self.vessel
@@ -180,24 +309,23 @@ class Streams:
             del self.secondaryOrbits
             print("No more secondary orbits. Deleted.")
 
-        
-
-    def ressources_recreate(self):
+    def stage(self):
         vessel = self.vessel
         conn = self.conn
 
+        #Test if there is any solar panel 
         if str(vessel.parts.solar_panels) != "[]":
             self.solar_panels = {}
             self.solar_panel_number = 0
-            for solar_panel in vessel.parts.solar_panels:
+            for solar_panel in vessel.parts.solar_panels: #Get state, energy flow and exposure for every solar panel
                 self.solar_panels[f'solar_{self.solar_panel_number}_state'] = conn.add_stream(getattr, solar_panel, 'state')
                 self.solar_panels[f'solar_{self.solar_panel_number}_energy_flow'] = conn.add_stream(getattr, solar_panel, 'energy_flow')
                 self.solar_panels[f'solar_{self.solar_panel_number}_sun_exposure'] = conn.add_stream(getattr, solar_panel, 'sun_exposure')
                 self.solar_panel_number += 1
-            print("solar panels created")
         else:
             self.solar_panel_number = 0
 
+        #Test if there is launch clamp for grounded state
         if self.try_launch_clamp == True:
             try:
                 if str(vessel.parts.launch_clamps) != "[]":
@@ -207,20 +335,43 @@ class Streams:
 
             except:
                 self.try_launch_clamp = False
-                
+
+        #Getting the propellants that could be consumed
+        allPropParts = vessel.parts.engines
+        self.propellants = []
+        temp_propellant_list = []
+        for part in allPropParts: #Test for every engine
+            for propellant in part.propellants: #Test for every propellant
+                if propellant.name not in temp_propellant_list:  #If the propellant doesn't already exist
+                    self.propellants.append(propellant)   
+                    temp_propellant_list.append(propellant.name)
+
+        self.resources = {}
+        for propellant in self.propellants:
+            self.resources[f'{propellant.name}_amount'] = conn.add_stream(getattr, propellant, 'total_resource_available')
+            self.resources[f'{propellant.name}_max'] = conn.add_stream(getattr, propellant, 'total_resource_capacity')
+
+        for resource in vessel.resources.names:
+            if resource in ('ElectricCharge', 'MonoPropellant'):
+                self.resources[f'{resource}_amount'] = conn.add_stream(vessel.resources.amount, resource)
+                self.resources[f'{resource}_max'] = conn.add_stream(vessel.resources.max, resource)
 
     def update(self):
         overheat_treshold = 0.7
+        lowProp_treshold = 10 #pourcentage
+        overG = 5
 
         if callable(self.engine_right_active):
             if (self.engine_right_temp() / self.engine_right_max_temp()) > overheat_treshold:
                 self.engine_right_overheat = True
+                self.engineOVH = True
             else:
                 self.engine_right_overheat = False
 
         if callable(self.engine_center_active):
             if (self.engine_center_temp() / self.engine_center_max_temp()) > overheat_treshold:
                 self.engine_center_overheat = True
+                self.engineOVH = True
             else:
                 self.engine_center_overheat = False
 
@@ -228,19 +379,63 @@ class Streams:
         if callable(self.engine_left_active):
             if (self.engine_left_temp() / self.engine_left_max_temp()) > overheat_treshold:
                 self.engine_left_overheat = True
+                self.engineOVH = True
             else:
                 self.engine_left_overheat = False
 
-            
+        if self.engine_left_overheat == False and self.engine_center_overheat == False and self.engine_right_overheat == False:
+            self.engineOVH = False
 
+
+        if self.g_force() > 5:
+            self.highG = True
+        else:
+            self.highG = False
+
+        if self.altitude() > 5 and self.altitude() < 100:
+            self.lowAlt = True
+        else:
+            self.lowAlt = False
+
+        if self.conn.space_center.target_vessel != None or self.conn.space_center.target_body != None or self.conn.space_center.target_docking_port !=None:
+            self.tgtLock = True
+        else:
+            self.tgtLock = False 
+
+        if self.thrust() == 0:
+            self.meco = True
+        else:
+            self.meco = False
+
+        contact = []
+        self.gearsBroken = False
+        for ldgGear in self.ldgGearData:
+            if ldgGear["id"] != None and str(ldgGear["state"]()) == "WheelState.broken":
+                self.gearsBroken = True
+            contact.append(ldgGear["grounded"]())
+
+        if len(contact) == 3 and (contact[0] == True or contact[1] == True or contact[2] == True):
+            self.contact = True
+        else:
+            self.contact = False
+        
     def update_flow(self):
-        temp = self.resources['ElectricCharge_amount']()
-        if self.prev_EC != None:
-            self.ElectricCharge_flow = (temp-self.prev_EC)
-            self.prev_EC = temp
+        electricCharge = self.resources['ElectricCharge_amount']()
+        speed = self.speed()
+        
+        if self.prev_EC != None and self.prev_speed != None and self.prev_time != None:
+            DTime = time.time_ns() - self.prev_time
+            self.ElectricCharge_flow = ((electricCharge-self.prev_EC)*1000000000)/DTime
+            self.deltaSpeed = ((speed-self.prev_speed)*1000000000)/DTime
+            self.prev_EC = electricCharge
+            self.prev_speed = speed
         else:
             self.ElectricCharge_flow = 0
-            self.prev_EC = temp
+            self.prev_EC = electricCharge
+            self.prev_speed = speed
+            self.prev_time = time.time_ns()
+        
+
             
 
 class Application:
@@ -255,11 +450,13 @@ class Application:
 
         self.game_scene_flight = False
 
+        
+
     def connect(self):
         log.append('GUI Connecting to the game server....')
         if self.game_connected is False:
             try:
-                self.conn = krpc.connect(name='MFCD V0.4', address = "192.168.1.4", rpc_port=50000, stream_port=50001)
+                self.conn = krpc.connect(name='MFCD V0.4', address = IP, rpc_port=50000, stream_port=50001)
                 log.append('GUI Connected to the game server')
                 self.game_connected = True
             except ConnectionRefusedError:
@@ -282,6 +479,7 @@ class Application:
 
             if self.vessel_connected:
                 self.streams = Streams(self.conn, self.vessel)
+                
 
     def disconnect(self):
         try:
@@ -305,7 +503,7 @@ class Application:
             if self.ready():
                 if self.streams.current_stage() != stage_prev:
                     print("stage change")
-                    self.streams.ressources_recreate() 
+                    self.streams.stage() 
                 stage_prev = self.streams.current_stage()
                 self.streams.update()
 

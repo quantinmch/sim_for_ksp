@@ -118,7 +118,7 @@ class Prop:
         self.engineR_throttle.set_material(green)
         self.engineR_throttle.rotateToZ(180)
 
-        self.overheat_warning = threading.Thread(target=blinkingOVH, args=(self.engineL_OVH_txt, self.engineC_OVH_txt, self.engineR_OVH_txt, overheating_engine))
+        self.overheat_warning = threading.Thread(target=blinkingOVH, args=(self.engineL_OVH_txt, self.engineC_OVH_txt, self.engineR_OVH_txt, overheating_engine), daemon=True)
         self.overheat_warning.start()
 
 

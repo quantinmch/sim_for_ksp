@@ -1,23 +1,26 @@
-from math import sin, cos
-import pi3d, os
-import math
-import numpy as np
-import time
-import ctypes
-import krpc
-from multiprocessing import Process, Queue, Array
+#export DISPLAY=:0.0
+#export XAUTHORITY=~/.Xauthority
 
-from inputs import Buttons
-from GUI import Application
 
-from display import Disp
 
-import serial
+import threading
 import sys
+
+from inputs import keyboard_input
+from i2c import dataExport
+from GUI import Application
+from display import Disp
 
 screen = Disp()
 
+input_thread = threading.Thread(target=keyboard_input, args=(screen, ), daemon=True)
+input_thread.start()
+i2c_thread = threading.Thread(target=dataExport, daemon=True)
+#i2c_thread.start()
+
 screen.run()
+print("program ended by manual input")
+sys.exit()
 
 
 

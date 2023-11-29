@@ -4,8 +4,6 @@ import math
 import numpy as np
 import time
 import krpc
-from assets.encoder import Encoder
-import RPi.GPIO as GPIO
 
 class TextData(object):
     ip = "N/A"

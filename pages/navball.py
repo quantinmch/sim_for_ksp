@@ -60,6 +60,16 @@ class TextData(object):
 
 text_data = TextData()
 
+class Marker(pi3d.Plane):
+    def __init__(self, title, width=70, height=70, posx=230, posy=0):
+        super().__init__(w = width, h=height, x=posx, y=posy, z=0, name=title)
+        self.backimg = pi3d.Texture('assets/markers/'+title+'.png')
+
+    def draw(self, shader):
+        super().draw(shader, [self.backimg])
+
+
+
 class Nav:
     def __init__(self, controller):
         
@@ -74,6 +84,8 @@ class Nav:
         self.speed_indicator_img = pi3d.Texture("assets/nav_speed.png")
         self.mask_img = pi3d.Texture("assets/nav_mask.png")
         self.alt_gauge_img = pi3d.Texture("assets/alt_gauge.png")
+
+        self.prograde_marker=Marker("prograde")
 
         self.alt_text = pi3d.PointText(controller.pointFont, controller.CAMERA2D, max_chars=400, point_size=64)
         self.text = pi3d.PointText(controller.pointFont, controller.CAMERA2D, max_chars=400, point_size=64, )
@@ -191,7 +203,7 @@ class Nav:
         if first_call:
             self.controller.DISPLAY.add_sprites(self.back)
         
-        
+        #prograde = streams.prograde()
         
         self.navball.draw(self.controller.flatsh, [self.navimg])
         self.mask.draw(self.controller.flatsh, [self.mask_img])
@@ -298,7 +310,7 @@ class Nav:
 
         try:
             fuel_stage = ((streams.resources['LiquidFuel_amount']())/(streams.resources['LiquidFuel_max']()))*100
-        except ZeroDivisionError:
+        except:
             fuel_stage = 0
 
         temp = streams.throttle()
@@ -382,8 +394,13 @@ class Nav:
             temp = temp % 10
             self.speed_indicator.positionY(-temp*4)
 
+#AFFICHAGE DES MARQUEURS
 
-        
+        #self.prograde_marker.positionX(230*prograde[1])
+        #self.prograde_marker.positionY(230*prograde[2])
+        #self.prograde_marker.draw(self.controller.flatsh)
+
+#AFFICHAGE DU THROTTLE ET DES TEXTES
 
         self.throttle_bar.draw()
         self.text.regen()

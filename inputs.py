@@ -8,25 +8,44 @@ import RPi.GPIO as GPIO
 import neopixel
 import board
 
+import serial
 
+from msgbox import log, cmd
+
+'''
+INPUTS - Gère les boutons connectés à la raspberry
+        GPIO interne pour les boutons de changement d'affichage
+        Serial avec l'arduino pour le clavier
+'''
+
+arduino = serial.Serial('/dev/ttyUSB0', 9600, timeout=0.01)
+arduino.reset_input_buffer()
+
+
+
+def keyboard_input(display):
+    buttons = Buttons()
+
+    while True:
+        #Decode serial from arduino -> imput from keyboard
+        line = arduino.readline().decode('utf-8').rstrip()
+        if len(line) != 0:
+            if line == 'I':
+                display.stop()
+            elif line == 'D':
+                log.append("MASTER RESET")
+                cmd.append("conn_reset")
+            print(line)
+
+
+        #Check for any side button pressed
+        temp = buttons.Get_button_pressed()
+        if temp != None:
+            cmd.append(temp)
+                
 
 class Buttons:
-    def __init__(self):
-        try:
-            pixel_pin = board.D18
-            ORDER = neopixel.GRB
-
-
-            pixels = neopixel.NeoPixel(
-                board.D18, 12, brightness=1, auto_write=False, pixel_order=ORDER
-            )
-
-            pixels.fill((0, 255,0 ))
-            pixels.show()
-        except:
-            print("Backlight set failed.")
-
-        
+    def __init__(self):      
         GPIO.setup(25, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(25, GPIO.FALLING)
         GPIO.setup(12, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -42,14 +61,14 @@ class Buttons:
 
     def Get_button_pressed(self):
         if GPIO.event_detected(25):
-            return 'Nav'
+            return "Page_Nav"
         elif GPIO.event_detected(12):
-            return 'Prop'
+            return 'Page_Prop'
         elif GPIO.event_detected(16):
-            return 'Pwr'
+            return 'Page_Pwr'
         elif GPIO.event_detected(20):
-            return 'TgtMgm'
+            return 'Page_TgtMgm'
         elif GPIO.event_detected(21):
-            return 'Orb'
+            return 'Page_Orb'
         else:
             return None
