@@ -7,6 +7,7 @@ import threading
 from inputs import Buttons
 from GUI import Application
 from msgbox import Msgbox, cmd, log
+from alarms import Alarms
 import i2c
 
 from pages.power import Pwr
@@ -56,7 +57,8 @@ class Disp:
         #Creation du log
         self.log = Msgbox(self)
         
-
+        #Creation des alarmes
+        self.alarms = Alarms(self)
         
 
     def draw_page(self, page_name, streams = None):
@@ -136,6 +138,7 @@ class Disp:
                 app.vessel_connected = False
 
             self.log.display_text()
+            self.alarms.display()
 
     def stop(self):
         self.DISPLAY.destroy()
