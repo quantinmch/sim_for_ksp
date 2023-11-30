@@ -3,6 +3,7 @@ import krpc
 from functools import partial
 import time
 from msgbox import log, cmd
+from alarms import masterAlarm, masterCaution
 
 existingNodes = False
 
@@ -64,13 +65,11 @@ class Streams:
             if str(dockingPort.state) != "DockingPortState.docked":
                 self.dockingPortsDict[dockingPort.part.title] = dockingPort.part
         self.dockingPortsDict[vessel.parts.root.title] = vessel.parts.root
-        
 
         self.partControlling = conn.add_stream(getattr, vessel.parts, 'controlling')
         self.partControlling.add_callback(self.control_update)
         self.partControlling.start()
         
-
         self.UT = conn.add_stream(getattr, conn.space_center, 'ut')
        
         self.orbits = {}
@@ -104,7 +103,6 @@ class Streams:
         
         self.current_stage = conn.add_stream(getattr, vessel.control, 'current_stage')
 
-
         self.throttle = conn.add_stream(getattr, vessel.control, 'throttle')
         self.speed = conn.add_stream(getattr, vessel.flight(srfRefFrame), 'speed')
         self.altitude = conn.add_stream(getattr, vessel.flight(), 'surface_altitude')
@@ -136,7 +134,6 @@ class Streams:
         self.nextOrbit.add_callback(self.orbits_update)
         self.nextOrbit.start()
         
-
         self.highG = False
         self.lowAlt = False
         self.tgtLock = False
@@ -247,16 +244,12 @@ class Streams:
         else:
             self.controllerIsDockingPort = False
             
-            
-
-
     def setRefPart(self, refPart):
         if refPart in self.dockingPortsDict:
             self.vessel.parts.controlling = self.dockingPortsDict[refPart]
             self.partControlling = self.conn.add_stream(getattr, self.vessel.parts, 'controlling')
             log.append('Selected ' + refPart + 'as reference part')
        
-
     def trueAnomalyAt(self, time):
         return self.vesselOrbit.true_anomaly_at_ut(time)
 
@@ -268,16 +261,19 @@ class Streams:
         conn = self.conn
         self.nodesOrbits = {}
 
-        print("NODE CHANGE")
-        print(len(nodes))
+        try:
+            print("NODE CHANGE")
+            print(len(nodes))
 
-        self.nodesNb = len(nodes)
+            self.nodesNb = len(nodes)
 
-        if len(nodes) > 0:
-            for orbitNb in range(len(nodes)):
-                self.nodesOrbits[f'nodeOrbit{orbitNb}'] = conn.add_stream(getattr, nodes[orbitNb], 'orbit')
-                self.nodesOrbits[f'nodeOrbit{orbitNb}_apoapsis'] = conn.add_stream(getattr, nodes[orbitNb].orbit, 'apoapsis_altitude')
-                self.nodesOrbits[f'nodeOrbit{orbitNb}_ut'] = conn.add_stream(getattr, nodes[orbitNb], 'ut')         
+            if len(nodes) > 0:
+                for orbitNb in range(len(nodes)):
+                    self.nodesOrbits[f'nodeOrbit{orbitNb}'] = conn.add_stream(getattr, nodes[orbitNb], 'orbit')
+                    self.nodesOrbits[f'nodeOrbit{orbitNb}_apoapsis'] = conn.add_stream(getattr, nodes[orbitNb].orbit, 'apoapsis_altitude')
+                    self.nodesOrbits[f'nodeOrbit{orbitNb}_ut'] = conn.add_stream(getattr, nodes[orbitNb], 'ut')        
+        except Exception as e:
+            print("Error occured in nodes_updates :", e) 
 
     def orbits_update(self, orbit):
         vessel = self.vessel
@@ -410,14 +406,17 @@ class Streams:
         contact = []
         self.gearsBroken = False
         for ldgGear in self.ldgGearData:
-            if ldgGear["id"] != None and str(ldgGear["state"]()) == "WheelState.broken":
-                self.gearsBroken = True
-            contact.append(ldgGear["grounded"]())
+            if ldgGear["id"] != None: 
+                if str(ldgGear["state"]()) == "WheelState.broken":
+                    self.gearsBroken = True
+                contact.append(ldgGear["grounded"]())
 
         if len(contact) == 3 and (contact[0] == True or contact[1] == True or contact[2] == True):
             self.contact = True
         else:
             self.contact = False
+
+        self.alarms_vigil()
         
     def update_flow(self):
         electricCharge = self.resources['ElectricCharge_amount']()
@@ -435,7 +434,17 @@ class Streams:
             self.prev_speed = speed
             self.prev_time = time.time_ns()
         
+    def alarms_vigil(self):
+        global masterCaution, masterAlarm
 
+        for resource in ('ElectricCharge', 'MonoPropellant', 'LiquidFuel', 'Oxidizer', 'IntakeAir', 'Ablator'): #For : tous les propellants du caution panel 
+            if (resource+"_max") in self.resources:                                                             #Si ce propellant existe (dans le vaisseau actuel)
+                quantity = self.resources[f'{resource}_amount']()/self.resources[f'{resource}_max']()           #Obtiens la quantité restante
+                if quantity < 0.2:
+                    masterCaution.append("Low"+str(resource))                                                   #Si quantité <20%, caution
+
+                if quantity < 0.1:
+                    masterAlarm.append("Low"+str(resource))                                                     #Si quantité <10%, alarm
             
 
 class Application:
@@ -449,8 +458,6 @@ class Application:
         self.vessel_connected = False
 
         self.game_scene_flight = False
-
-        
 
     def connect(self):
         log.append('GUI Connecting to the game server....')
