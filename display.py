@@ -5,6 +5,7 @@ import krpc
 import threading
 
 from inputs import Buttons
+from assets.encoder import encoder
 from GUI import Application
 from msgbox import Msgbox, cmd, log
 from alarms import Alarms
@@ -98,6 +99,7 @@ class Disp:
             if len(cmd) == 1 and "Page_" in cmd[0]: #si la commande contient le terme "page"
                 temp = cmd.popleft() #récupère la commande pour la traiter et la supprime de la queue
                 current_page = temp.replace("Page_", "") #Met à jour la page à afficher
+                encoder.setValue(0)
                 print("display page" + current_page)
 
             if len(cmd) == 1 and "Reinit_page_" in cmd[0]:

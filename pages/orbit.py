@@ -6,6 +6,7 @@ import numpy as np
 import time
 import krpc
 from datetime import timedelta
+from assets.encoder import encoder
 
 red = (1.0, 0.0 , 0.0, 1.0)
 orange = (1.0, 0.7 , 0.0, 1.0)
@@ -497,7 +498,7 @@ class Orb:
                 self.periapsis_marker.draw(self.controller.shader, [self.periapsis_texture])
 
 
-    def show(self, streams, first_call, encoder=0):
+    def show(self, streams, first_call):
         self.controller.DISPLAY.clear()
         if first_call:
             self.controller.DISPLAY.add_sprites(self.back)
