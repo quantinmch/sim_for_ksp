@@ -46,7 +46,7 @@ def keyboard_input(display):
 
 class Buttons:
     def __init__(self):     
-        for pin in [25,12,16,20,21,5,6,13,19,26]: 
+        for pin in [25,12,16,20,21,4,5,6,13,19,26]: 
             GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             GPIO.add_event_detect(pin, GPIO.FALLING)
         self.coolDown = 0
