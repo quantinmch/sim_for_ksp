@@ -30,30 +30,37 @@ class Streams:
         self.bodies = self.conn.space_center.bodies
         self.vessels = self.conn.space_center.vessels
 
-        self.allPartsList = []
-        for part in vessel.parts.all:
-            temp = Part
+        PARTINDEX = False
 
-            temp.name = part.title
-            temp.tag = part.tag
-            if part.parent != None: temp.parent = part.parent
-            if part.children != None: temp.children = part.children
+        if PARTINDEX == True:
+            self.allPartsList = []
+            partsListLength = len(vessel.parts.all)
+            currentIter = 0
+            for part in vessel.parts.all:
+                temp = Part
 
-            if part.axially_attached != None:
-                temp.attachement = "axial"
-            elif part.radially_attached != None:
-                temp.attachement = "radial"
-            else:
-                temp.attachement = None
+                temp.name = part.title
+                temp.tag = part.tag
+                if part.parent != None: temp.parent = part.parent
+                if part.children != None: temp.children = part.children
 
-            temp.stage = part.stage
-            temp.decouple_stage = part.decouple_stage
-            temp.max_temp = part.max_temperature
-            temp.max_skin_temp = part.max_skin_temperature
+                if part.axially_attached != None:
+                    temp.attachement = "axial"
+                elif part.radially_attached != None:
+                    temp.attachement = "radial"
+                else:
+                    temp.attachement = None
 
-            self.allPartsList.append(temp)
+                temp.stage = part.stage
+                temp.decouple_stage = part.decouple_stage
+                temp.max_temp = part.max_temperature
+                temp.max_skin_temp = part.max_skin_temperature
 
-        print("added", len(self.allPartsList), "parts to index")
+                self.allPartsList.append(temp)
+                print("Loading parts : ", (currentIter/partsListLength)*100, "%")
+                currentIter += 1
+
+            print("added", len(self.allPartsList), "parts to index")
 
         self.vesselsNames = []
         for vessel in self.vessels :
@@ -64,7 +71,10 @@ class Streams:
         for dockingPort in vessel.parts.docking_ports:
             if str(dockingPort.state) != "DockingPortState.docked":
                 self.dockingPortsDict[dockingPort.part.title] = dockingPort.part
-        self.dockingPortsDict[vessel.parts.root.title] = vessel.parts.root
+        try:
+            self.dockingPortsDict[vessel.parts.root.title] = vessel.parts.root
+        except Exception as e:
+            print("ERROR : ", e)
 
         self.partControlling = conn.add_stream(getattr, vessel.parts, 'controlling')
         self.partControlling.add_callback(self.control_update)
