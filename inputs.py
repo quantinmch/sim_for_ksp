@@ -45,30 +45,45 @@ def keyboard_input(display):
                 
 
 class Buttons:
-    def __init__(self):      
-        GPIO.setup(25, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.add_event_detect(25, GPIO.FALLING)
-        GPIO.setup(12, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.add_event_detect(12, GPIO.FALLING)
-        GPIO.setup(16, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.add_event_detect(16, GPIO.FALLING)
-        GPIO.setup(20, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.add_event_detect(20, GPIO.FALLING)
-        GPIO.setup(21, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.add_event_detect(21, GPIO.FALLING)
-        GPIO.setup(4, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.add_event_detect(4, GPIO.FALLING)
+    def __init__(self):     
+        for pin in [25,12,16,20,21,5,6,13,19,26]: 
+            GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            GPIO.add_event_detect(pin, GPIO.FALLING)
+        self.coolDown = 0
 
     def Get_button_pressed(self):
-        if GPIO.event_detected(25):
-            return "Page_Nav"
-        elif GPIO.event_detected(12):
-            return 'Page_Prop'
-        elif GPIO.event_detected(16):
-            return 'Page_Pwr'
-        elif GPIO.event_detected(20):
-            return 'Page_TgtMgm'
-        elif GPIO.event_detected(21):
-            return 'Page_Orb'
+        if self.coolDown > 500:    
+            if GPIO.event_detected(25):
+                return "Page_Nav"
+                self.coolDown = 0
+            elif GPIO.event_detected(12):
+                return 'Page_Prop'
+                self.coolDown = 0
+            elif GPIO.event_detected(16):
+                return 'Page_Pwr'
+                self.coolDown = 0
+            elif GPIO.event_detected(20):
+                return 'Page_TgtRtry'
+                self.coolDown = 0
+            elif GPIO.event_detected(21):
+                return 'Page_Orb'
+                self.coolDown = 0
+            elif GPIO.event_detected(5):
+                return 'Page_Au-P'
+                self.coolDown = 0
+            elif GPIO.event_detected(6):
+                return 'Page_Man'
+                self.coolDown = 0
+            elif GPIO.event_detected(13):
+                return 'Page_TgtMgm'
+                self.coolDown = 0
+            elif GPIO.event_detected(19):
+                return 'Page_Rdv'
+                self.coolDown = 0
+            elif GPIO.event_detected(26):
+                return 'Page_Ldg'
+                self.coolDown = 0
+            else:
+                return None
         else:
-            return None
+            self.coolDown += 1
