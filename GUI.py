@@ -283,20 +283,24 @@ class Streams:
         vessel = self.vessel
         conn = self.conn
         self.nodesOrbits = {}
+        attempts = 0
 
-        try:
-            print("NODE CHANGE")
-            print(len(nodes))
+        while attempts < 3:
+            try:
+                print("NODE CHANGE")
+                print(len(nodes))
 
-            self.nodesNb = len(nodes)
+                self.nodesNb = len(nodes)
 
-            if len(nodes) > 0:
-                for orbitNb in range(len(nodes)):
-                    self.nodesOrbits[f'nodeOrbit{orbitNb}'] = conn.add_stream(getattr, nodes[orbitNb], 'orbit')
-                    self.nodesOrbits[f'nodeOrbit{orbitNb}_apoapsis'] = conn.add_stream(getattr, nodes[orbitNb].orbit, 'apoapsis_altitude')
-                    self.nodesOrbits[f'nodeOrbit{orbitNb}_ut'] = conn.add_stream(getattr, nodes[orbitNb], 'ut')        
-        except Exception as e:
-            print("Error occured in nodes_updates :", e) 
+                if len(nodes) > 0:
+                    for orbitNb in range(len(nodes)):
+                        self.nodesOrbits[f'nodeOrbit{orbitNb}'] = conn.add_stream(getattr, nodes[orbitNb], 'orbit')
+                        self.nodesOrbits[f'nodeOrbit{orbitNb}_apoapsis'] = conn.add_stream(getattr, nodes[orbitNb].orbit, 'apoapsis_altitude')
+                        self.nodesOrbits[f'nodeOrbit{orbitNb}_ut'] = conn.add_stream(getattr, nodes[orbitNb], 'ut')    
+                break     
+            except Exception as e:
+                print("Error in node creation :", e)
+                attempts += 1
 
     def orbits_update(self, orbit):
         vessel = self.vessel
