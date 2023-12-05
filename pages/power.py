@@ -202,8 +202,8 @@ class Pwr:
             else:
                 text_data.total_prod = str(round(streams.ElectricCharge_flow,2))
 
-        text_data.battery_amount = (int(streams.resources['ElectricCharge_amount']()))
-        text_data.battery_max = (int(streams.resources['ElectricCharge_max']()))
+        text_data.battery_amount = (int(streams.resources['ElectricCharge_amount']))
+        text_data.battery_max = (int(streams.resources['ElectricCharge_max']))
         text_data.battery_percentage = int((text_data.battery_amount/text_data.battery_max)*100)
 
         self.battery.scale(1, text_data.battery_percentage/100, 1)

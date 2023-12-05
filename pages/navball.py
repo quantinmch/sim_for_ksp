@@ -199,212 +199,221 @@ class Nav:
         
 
     def show(self, streams, first_call, encoder=0):
-        self.controller.DISPLAY.clear()
-        if first_call:
-            self.controller.DISPLAY.add_sprites(self.back)
-        
-        #prograde = streams.prograde()
-        
-        self.navball.draw(self.controller.flatsh, [self.navimg])
-        self.mask.draw(self.controller.flatsh, [self.mask_img])
-        self.speed_indicator.draw(self.controller.flatsh, [self.speed_indicator_img])
-        
-        if(streams.altitude() > 3):
-            self.alt_gauge.draw(self.controller.flatsh, [self.alt_gauge_img])
-            self.alt_indicator.draw(self.controller.flatsh, [self.speed_indicator_img])
-            self.alt_text.regen()
-            self.alt_text.draw()
-
-        self.navball.rotateToY(streams.heading())
-        self.navball.rotateToX(-streams.pitch())
-        self.navball.rotateToZ(streams.roll())
-
-        text_data.speed = int(streams.speed())
-
-        text_data.heading = streams.heading()
-        text_data.pitch = streams.pitch()
-        text_data.roll = streams.roll()
-
-        text_data.g_force = streams.g_force()
-
-
-        if len(streams.nodes()):
-            self.mnv_txt.colouring.set_colour(blue)
-        else:
-            self.mnv_txt.colouring.set_colour(gray)
-
-        if streams.targetVessel() != None:
-            self.tgt_txt.colouring.set_colour(blue)
-        else:
-            self.tgt_txt.colouring.set_colour(gray)
-
-        
         try:
-            temp = streams.thrust() / streams.mass()
-            text_data.twr = temp
-            if temp > 1.5 :
-                self.twr_txt.colouring.set_colour(green)
-            elif temp < 1.5 and temp >= 1:
-                self.twr_txt.colouring.set_colour(orange)
-            elif temp < 1 and temp > 0:
-                self.twr_txt.colouring.set_colour(red)
+            self.controller.DISPLAY.clear()
+            if first_call:
+                self.controller.DISPLAY.add_sprites(self.back)
+            
+            #prograde = streams.prograde()
+
+            self.navball.draw(self.controller.flatsh, [self.navimg])
+            self.mask.draw(self.controller.flatsh, [self.mask_img])
+            self.speed_indicator.draw(self.controller.flatsh, [self.speed_indicator_img])
+            
+            if(streams.altitude() > 3):
+                self.alt_gauge.draw(self.controller.flatsh, [self.alt_gauge_img])
+                self.alt_indicator.draw(self.controller.flatsh, [self.speed_indicator_img])
+                self.alt_text.regen()
+                self.alt_text.draw()
+
+            self.navball.rotateToY(streams.heading())
+            self.navball.rotateToX(-streams.pitch())
+            self.navball.rotateToZ(streams.roll())
+
+            text_data.speed = int(streams.speed())
+
+            text_data.heading = streams.heading()
+            text_data.pitch = streams.pitch()
+            text_data.roll = streams.roll()
+
+            text_data.g_force = streams.g_force()
+
+            try:
+
+                if len(streams.nodes()):
+                    self.mnv_txt.colouring.set_colour(blue)
+                else:
+                    self.mnv_txt.colouring.set_colour(gray)
+
+            except :
+                self.mnv_txt.colouring.set_colour(gray)
+
+            if streams.targetVessel() != None:
+                self.tgt_txt.colouring.set_colour(blue)
             else:
+                self.tgt_txt.colouring.set_colour(gray)
+
+            
+            
+            try:
+                temp = streams.thrust() / streams.mass()
+                text_data.twr = temp
+                if temp > 1.5 :
+                    self.twr_txt.colouring.set_colour(green)
+                elif temp < 1.5 and temp >= 1:
+                    self.twr_txt.colouring.set_colour(orange)
+                elif temp < 1 and temp > 0:
+                    self.twr_txt.colouring.set_colour(red)
+                else:
+                    self.twr_txt.colouring.set_colour(gray)
+
+            except ZeroDivisionError:
+                text_data.twr = 0
                 self.twr_txt.colouring.set_colour(gray)
+            
 
-        except ZeroDivisionError:
-            text_data.twr = 0
-            self.twr_txt.colouring.set_colour(gray)
-        
-
-        try:
-            temp = streams.max_thrust() / streams.mass()
-            text_data.max_twr = temp
-            if temp > 1.5 :
-                self.max_twr_txt.colouring.set_colour(green)
-            elif temp < 1.5 and temp >= 1:
-                self.max_twr_txt.colouring.set_colour(orange)
-            elif temp < 1 and temp > 0:
-                self.max_twr_txt.colouring.set_colour(red)
-            else:
+            try:
+                temp = streams.max_thrust() / streams.mass()
+                text_data.max_twr = temp
+                if temp > 1.5 :
+                    self.max_twr_txt.colouring.set_colour(green)
+                elif temp < 1.5 and temp >= 1:
+                    self.max_twr_txt.colouring.set_colour(orange)
+                elif temp < 1 and temp > 0:
+                    self.max_twr_txt.colouring.set_colour(red)
+                else:
+                    self.max_twr_txt.colouring.set_colour(gray)
+                
+            except ZeroDivisionError:
                 self.max_twr_txt.colouring.set_colour(gray)
+                text_data.max_twr = 0
+
             
-        except ZeroDivisionError:
-            self.max_twr_txt.colouring.set_colour(gray)
-            text_data.max_twr = 0
+            if str(streams.mode()) == 'SpeedMode.orbit':
+                text_data.speed_mode='ORB'
+                self.spd_mode_txt.colouring.set_colour(blue)
+            elif str(streams.mode()) == 'SpeedMode.surface':
+                text_data.speed_mode='SRF'
+                self.spd_mode_txt.colouring.set_colour(green)
+            elif str(streams.mode()) == 'SpeedMode.target':
+                text_data.speed_mode='TGT'
+                self.spd_mode_txt.colouring.set_colour(green)
+            else:
+                text_data.speed_mode='UKN'
+                self.spd_mode_txt.colouring.set_colour(red)
 
-        if str(streams.mode()) == 'SpeedMode.orbit':
-            text_data.speed_mode='ORB'
-            self.spd_mode_txt.colouring.set_colour(blue)
-        elif str(streams.mode()) == 'SpeedMode.surface':
-            text_data.speed_mode='SRF'
-            self.spd_mode_txt.colouring.set_colour(green)
-        elif str(streams.mode()) == 'SpeedMode.target':
-            text_data.speed_mode='TGT'
-            self.spd_mode_txt.colouring.set_colour(green)
-        else:
-            text_data.speed_mode='UKN'
-            self.spd_mode_txt.colouring.set_colour(red)
+            if streams.sas() == True:
+                self.sas_txt.colouring.set_colour(green)
+            else:
+                self.sas_txt.colouring.set_colour(gray)
 
-        if streams.sas() == True:
-            self.sas_txt.colouring.set_colour(green)
-        else:
-            self.sas_txt.colouring.set_colour(gray)
+            if streams.rcs() == True:
+                self.rcs_txt.colouring.set_colour(blue)
+            else:
+                self.rcs_txt.colouring.set_colour(gray)
 
-        if streams.rcs() == True:
-            self.rcs_txt.colouring.set_colour(blue)
-        else:
-            self.rcs_txt.colouring.set_colour(gray)
+            text_data.stage = streams.current_stage()
 
-        text_data.stage = streams.current_stage()
+            if streams.gears() == True:
+                self.gears_txt.colouring.set_colour(green)
+            else:
+                self.gears_txt.colouring.set_colour(gray)
 
-        if streams.gears() == True:
-            self.gears_txt.colouring.set_colour(green)
-        else:
-            self.gears_txt.colouring.set_colour(gray)
-
-        if streams.lights() == True:
-            self.lights_txt.colouring.set_colour(blue)
-        else:
-            self.lights_txt.colouring.set_colour(gray)
+            if streams.lights() == True:
+                self.lights_txt.colouring.set_colour(blue)
+            else:
+                self.lights_txt.colouring.set_colour(gray)
 
 
-        try:
-            fuel_stage = ((streams.resources['LiquidFuel_amount']())/(streams.resources['LiquidFuel_max']()))*100
-        except:
-            fuel_stage = 0
+            try:
+                fuel_stage = ((streams.resources['LiquidFuel_amount'])/(streams.resources['LiquidFuel_max']))*100
+            except:
+                fuel_stage = 0
 
-        temp = streams.throttle()
-        text_data.throttle = int(temp*100)
-        self.throttle_bar.scale(temp, 1, 1)
-        self.throttle_bar.positionX(-578+((250*temp)/2))
+            temp = streams.throttle()
+            text_data.throttle = int(temp*100)
+            self.throttle_bar.scale(temp, 1, 1)
+            self.throttle_bar.positionX(-578+((250*temp)/2))
 
-        temp = streams.altitude()
+            temp = streams.altitude()
 
-        if temp < 100000:
-            text_data.altUnite = int(temp%100)
-            text_data.alt100 = int(temp/100)
-        else:
-            text_data.altUnite = 99
-            text_data.alt100 = 999
+            if temp < 100000:
+                text_data.altUnite = int(temp%100)
+                text_data.alt100 = int(temp/100)
+            else:
+                text_data.altUnite = 99
+                text_data.alt100 = 999
 
-#AFFICHAGE ALTITUDE < 500M
-        if(temp < 500): 
-            self.alt_indicator.positionY((-temp*0.4)+200)
+    #AFFICHAGE ALTITUDE < 500M
+            if(temp < 500): 
+                self.alt_indicator.positionY((-temp*0.4)+200)
 
-            text_data.alt_ind0 = 0
-            self.alt_ind0.set_position(335, -temp*0.4, 0.1)
+                text_data.alt_ind0 = 0
+                self.alt_ind0.set_position(335, -temp*0.4, 0.1)
 
-            text_data.alt_ind1 = 5
-            self.alt_ind1.set_position(335, (-temp+500)*0.4, 0.1)  
+                text_data.alt_ind1 = 5
+                self.alt_ind1.set_position(335, (-temp+500)*0.4, 0.1)  
 
-            text_data.alt_ind2 = 10
-            self.alt_ind2.set_position(335, (-temp+1000)*0.4, 0.1)
-#AFFICHAGE ALTITUDE > 500M
-        else:
-            text_data.alt_ind0 = int((500*round(temp/500))/100)
-            self.alt_ind0.set_position(335, ((text_data.alt_ind0*100)-temp)*0.4, 0.1)
+                text_data.alt_ind2 = 10
+                self.alt_ind2.set_position(335, (-temp+1000)*0.4, 0.1)
+    #AFFICHAGE ALTITUDE > 500M
+            else:
+                text_data.alt_ind0 = int((500*round(temp/500))/100)
+                self.alt_ind0.set_position(335, ((text_data.alt_ind0*100)-temp)*0.4, 0.1)
 
-            text_data.alt_ind1 = int((500*round((temp+500)/500))/100)
-            self.alt_ind1.set_position(335, ((text_data.alt_ind1*100)+500-(temp+500))*0.4, 0.1)  
+                text_data.alt_ind1 = int((500*round((temp+500)/500))/100)
+                self.alt_ind1.set_position(335, ((text_data.alt_ind1*100)+500-(temp+500))*0.4, 0.1)  
 
-            text_data.alt_ind2 = int((500*round((temp-500)/500))/100)
-            self.alt_ind2.set_position(335, ((text_data.alt_ind2*100)-500-(temp-500))*0.4, 0.1)  
+                text_data.alt_ind2 = int((500*round((temp-500)/500))/100)
+                self.alt_ind2.set_position(335, ((text_data.alt_ind2*100)-500-(temp-500))*0.4, 0.1)  
 
-            temp = temp % 100
-            self.alt_indicator.positionY(-temp*0.4)
-#AFFICHAGE VITESSE < 50M/S
-        temp = streams.speed()
+                temp = temp % 100
+                self.alt_indicator.positionY(-temp*0.4)
+    #AFFICHAGE VITESSE < 50M/S
+            temp = streams.speed()
 
-        if(temp < 50): 
-            text_data.spd_ind0 = 80
-            self.spd_ind0.set_position(-400, (-temp+80)*4, 0.1)
+            if(temp < 50): 
+                text_data.spd_ind0 = 80
+                self.spd_ind0.set_position(-400, (-temp+80)*4, 0.1)
 
-            text_data.spd_ind1 = 60
-            self.spd_ind1.set_position(-400, (-temp+60)*4, 0.1)  
+                text_data.spd_ind1 = 60
+                self.spd_ind1.set_position(-400, (-temp+60)*4, 0.1)  
 
-            text_data.spd_ind2 = 0
-            self.spd_ind2.set_position(-400, -temp*4, 0.1)
+                text_data.spd_ind2 = 0
+                self.spd_ind2.set_position(-400, -temp*4, 0.1)
 
-            text_data.spd_ind3 = 20
-            self.spd_ind3.set_position(-400, (-temp+20)*4, 0.1)
+                text_data.spd_ind3 = 20
+                self.spd_ind3.set_position(-400, (-temp+20)*4, 0.1)
 
-            text_data.spd_ind4 = 40
-            self.spd_ind4.set_position(-400, (-temp+40)*4, 0.1)
-            
-            self.speed_indicator.positionY((-temp*4)+200)
+                text_data.spd_ind4 = 40
+                self.spd_ind4.set_position(-400, (-temp+40)*4, 0.1)
+                
+                self.speed_indicator.positionY((-temp*4)+200)
 
-#AFFICHAGE VITESSE > 50M/S
+    #AFFICHAGE VITESSE > 50M/S
 
-        else:
-            text_data.spd_ind0 = 20*round((temp-40)/20)
-            self.spd_ind0.set_position(-400, (text_data.spd_ind0-40-(temp-40))*4, 0.1)
+            else:
+                text_data.spd_ind0 = 20*round((temp-40)/20)
+                self.spd_ind0.set_position(-400, (text_data.spd_ind0-40-(temp-40))*4, 0.1)
 
-            text_data.spd_ind1 = 20*round((temp-20)/20)
-            self.spd_ind1.set_position(-400, (text_data.spd_ind1-20-(temp-20))*4, 0.1)  
+                text_data.spd_ind1 = 20*round((temp-20)/20)
+                self.spd_ind1.set_position(-400, (text_data.spd_ind1-20-(temp-20))*4, 0.1)  
 
-            text_data.spd_ind2 = 20*round(temp/20)
-            self.spd_ind2.set_position(-400, (text_data.spd_ind2-temp)*4, 0.1)
+                text_data.spd_ind2 = 20*round(temp/20)
+                self.spd_ind2.set_position(-400, (text_data.spd_ind2-temp)*4, 0.1)
 
-            text_data.spd_ind3 = 20*round((temp+20)/20)
-            self.spd_ind3.set_position(-400, (text_data.spd_ind3+20-(temp+20))*4, 0.1)
+                text_data.spd_ind3 = 20*round((temp+20)/20)
+                self.spd_ind3.set_position(-400, (text_data.spd_ind3+20-(temp+20))*4, 0.1)
 
-            text_data.spd_ind4 = 20*round((temp+40)/20)
-            self.spd_ind4.set_position(-400, (text_data.spd_ind4+40-(temp+40))*4, 0.1)
+                text_data.spd_ind4 = 20*round((temp+40)/20)
+                self.spd_ind4.set_position(-400, (text_data.spd_ind4+40-(temp+40))*4, 0.1)
 
-            temp = temp % 10
-            self.speed_indicator.positionY(-temp*4)
+                temp = temp % 10
+                self.speed_indicator.positionY(-temp*4)
 
-#AFFICHAGE DES MARQUEURS
+    #AFFICHAGE DES MARQUEURS
 
-        #self.prograde_marker.positionX(230*prograde[1])
-        #self.prograde_marker.positionY(230*prograde[2])
-        #self.prograde_marker.draw(self.controller.flatsh)
+            #self.prograde_marker.positionX(230*prograde[1])
+            #self.prograde_marker.positionY(230*prograde[2])
+            #self.prograde_marker.draw(self.controller.flatsh)
 
-#AFFICHAGE DU THROTTLE ET DES TEXTES
+    #AFFICHAGE DU THROTTLE ET DES TEXTES
 
-        self.throttle_bar.draw()
-        self.text.regen()
-        self.text.draw()
+            self.throttle_bar.draw()
+            self.text.regen()
+            self.text.draw()
+        except Exception as e:
+            print("Exception in Navball : ", e)
 
     def remove_sprite(self):
         self.controller.DISPLAY.remove_sprites(self.back)

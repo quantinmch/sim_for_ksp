@@ -245,7 +245,6 @@ class Streams:
                 if self.vessel.resources.has_resource(propellant):
                     self.resources[f'{propellant}_amount'] = self.vessel.resources.amount(propellant)
                     self.resources[f'{propellant}_max'] = self.vessel.resources.max(propellant)
-            time.sleep(1/25)
 
     def setTarget(self, target):
         if target in self.vesselsNames:
@@ -389,6 +388,8 @@ class Streams:
                 self.engineOVH = True
             else:
                 self.engine_right_overheat = False
+        else:
+            self.engine_right_overheat = False
 
         if callable(self.engine_center_active):
             if (self.engine_center_temp() / self.engine_center_max_temp()) > overheat_treshold:
@@ -396,6 +397,8 @@ class Streams:
                 self.engineOVH = True
             else:
                 self.engine_center_overheat = False
+        else:
+            self.engine_center_overheat = False
 
 
         if callable(self.engine_left_active):
@@ -404,6 +407,8 @@ class Streams:
                 self.engineOVH = True
             else:
                 self.engine_left_overheat = False
+        else:
+            self.engine_left_overheat = False
 
         if self.engine_left_overheat == False and self.engine_center_overheat == False and self.engine_right_overheat == False:
             self.engineOVH = False
@@ -465,12 +470,18 @@ class Streams:
 
         for resource in ('ElectricCharge', 'SolidFuel','MonoPropellant', 'LiquidFuel', 'Oxidizer', 'IntakeAir', 'Ablator'): #For : tous les propellants du caution panel 
             if (resource+"_max") in self.resources:                                                             #Si ce propellant existe (dans le vaisseau actuel)
-                quantity = self.resources[f'{resource}_amount']/self.resources[f'{resource}_max']               #Obtiens la quantité restante
-                if quantity < 0.2:
-                    masterCaution.append("Low"+str(resource))                                                   #Si quantité <20%, caution
+                if self.resources[f'{resource}_max'] != 0:                                                      #Si le max n'et pas nul (cas ou le reservoir vient d'être largué)
+                    quantity = self.resources[f'{resource}_amount']/self.resources[f'{resource}_max']           #Obtiens la quantité restante
+                    if quantity < 0.2:
+                        masterCaution.append("Low"+str(resource))                                               #Si quantité <20%, caution
 
-                if quantity < 0.1:
-                    masterAlarm.append("Low"+str(resource))                                                     #Si quantité <10%, alarm
+                    if quantity < 0.1:
+                        masterAlarm.append("Low"+str(resource))                                                 #Si quantité <10%, alarm
+                else:
+                    del self.resources[f'{resource}_max']
+                    del self.resources[f'{resource}_amount']
+                    cmd.append("Reinit_page_propellant")
+
             
 
 class Application:
