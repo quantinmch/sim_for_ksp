@@ -1,4 +1,6 @@
 from multiprocessing import Process
+import time
+import threading
 import krpc
 from functools import partial
 import time
@@ -125,6 +127,10 @@ class Streams:
         self.createEngines()
         self.createLdgGears()
 
+        self.resources = {}
+        resources_thread = threading.Thread(target=self.getResources, daemon=True)
+        resources_thread.start()
+
         self.vesselOrbit = vessel.orbit
         self.vesselApoapsis = conn.add_stream(getattr, vessel.orbit, 'apoapsis_altitude')
         self.vesselPeriapsis = conn.add_stream(getattr, vessel.orbit, 'periapsis_altitude')
@@ -232,6 +238,14 @@ class Streams:
 
         except:
             self.engine_right_active = None
+
+    def getResources(self): 
+        while True:
+            for propellant in ('ElectricCharge', 'SolidFuel', 'MonoPropellant', 'LiquidFuel', 'Oxidizer', 'IntakeAir', 'Ablator'):
+                if self.vessel.resources.has_resource(propellant):
+                    self.resources[f'{propellant}_amount'] = self.vessel.resources.amount(propellant)
+                    self.resources[f'{propellant}_max'] = self.vessel.resources.max(propellant)
+            time.sleep(1/25)
 
     def setTarget(self, target):
         if target in self.vesselsNames:
@@ -343,6 +357,7 @@ class Streams:
                 self.try_launch_clamp = False
 
         #Getting the propellants that could be consumed
+        '''
         allPropParts = vessel.parts.engines
         self.propellants = []
         temp_propellant_list = []
@@ -361,6 +376,7 @@ class Streams:
             if resource in ('ElectricCharge', 'MonoPropellant'):
                 self.resources[f'{resource}_amount'] = conn.add_stream(vessel.resources.amount, resource)
                 self.resources[f'{resource}_max'] = conn.add_stream(vessel.resources.max, resource)
+        '''
 
     def update(self):
         overheat_treshold = 0.7
@@ -429,7 +445,7 @@ class Streams:
         self.alarms_vigil()
         
     def update_flow(self):
-        electricCharge = self.resources['ElectricCharge_amount']()
+        electricCharge = self.resources['ElectricCharge_amount']
         speed = self.speed()
         
         if self.prev_EC != None and self.prev_speed != None and self.prev_time != None:
@@ -447,9 +463,9 @@ class Streams:
     def alarms_vigil(self):
         global masterCaution, masterAlarm
 
-        for resource in ('ElectricCharge', 'MonoPropellant', 'LiquidFuel', 'Oxidizer', 'IntakeAir', 'Ablator'): #For : tous les propellants du caution panel 
+        for resource in ('ElectricCharge', 'SolidFuel','MonoPropellant', 'LiquidFuel', 'Oxidizer', 'IntakeAir', 'Ablator'): #For : tous les propellants du caution panel 
             if (resource+"_max") in self.resources:                                                             #Si ce propellant existe (dans le vaisseau actuel)
-                quantity = self.resources[f'{resource}_amount']()/self.resources[f'{resource}_max']()           #Obtiens la quantité restante
+                quantity = self.resources[f'{resource}_amount']/self.resources[f'{resource}_max']               #Obtiens la quantité restante
                 if quantity < 0.2:
                     masterCaution.append("Low"+str(resource))                                                   #Si quantité <20%, caution
 
@@ -525,7 +541,7 @@ class Application:
                 self.streams.update()
 
                 self.streams.update_flow()
-            time.sleep(25/1000)
+            time.sleep(1/25)
             
 
     

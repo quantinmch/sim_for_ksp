@@ -167,8 +167,8 @@ class Prop:
         for resource in streams.resources:
             if "amount" in resource and not "ElectricCharge" in resource:
                 temp = f'{resource}'.replace("_amount", "") 
-                if(streams.resources[f'{temp}_max']() != 0):
-                    percentage = int(((streams.resources[f'{temp}_amount']())/(streams.resources[f'{temp}_max']()))*100)
+                if(streams.resources[f'{temp}_max'] != 0):
+                    percentage = int(((streams.resources[f'{temp}_amount'])/(streams.resources[f'{temp}_max']))*100)
                 else:
                     percentage = 0
 
