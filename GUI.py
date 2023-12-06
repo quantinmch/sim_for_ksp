@@ -144,7 +144,7 @@ class Streams:
         self.vesselEccentricity = conn.add_stream(getattr, vessel.orbit, 'eccentricity')
         self.vesselNextOrbit = conn.add_stream(getattr, vessel.orbit, 'next_orbit')
         self.vesselTimeToSOIChange = conn.add_stream(getattr, vessel.orbit, 'time_to_soi_change')
-        self.bodyOrbitingRadius = vessel.orbit.body.equatorial_radius
+        self.bodyOrbitingRadius = conn.add_stream(getattr, vessel.orbit.body, 'equatorial_radius')
         self.bodyOrbiting =  conn.add_stream(getattr, vessel.orbit.body, 'name')
 
         self.nextOrbit = conn.add_stream(getattr, self.vesselOrbit, 'next_orbit')
@@ -293,12 +293,6 @@ class Streams:
             self.vessel.parts.controlling = self.dockingPortsDict[refPart]
             self.partControlling = self.conn.add_stream(getattr, self.vessel.parts, 'controlling')
             log.append('Selected ' + refPart + 'as reference part')
-       
-    def trueAnomalyAt(self, time):
-        return self.vesselOrbit.true_anomaly_at_ut(time)
-
-    def eccentricAnomalyAt(self, time):
-        return self.vesselOrbit.eccentric_anomaly_at_ut(time)
 
     def nodes_update(self, nodes):
         vessel = self.vessel
@@ -316,8 +310,14 @@ class Streams:
                 if len(nodes) > 0:
                     for orbitNb in range(len(nodes)):
                         self.nodesOrbits[f'nodeOrbit{orbitNb}'] = conn.add_stream(getattr, nodes[orbitNb], 'orbit')
-                        self.nodesOrbits[f'nodeOrbit{orbitNb}_apoapsis'] = conn.add_stream(getattr, nodes[orbitNb].orbit, 'apoapsis_altitude')
-                        self.nodesOrbits[f'nodeOrbit{orbitNb}_ut'] = conn.add_stream(getattr, nodes[orbitNb], 'ut')    
+                        self.nodesOrbits[f'nodeOrbit{orbitNb}_ut'] = conn.add_stream(getattr, nodes[orbitNb], 'ut')   
+
+                        self.nodesOrbits[f'nodeOrbit{orbitNb}_bodyName'] = conn.add_stream(getattr, nodes[orbitNb].orbit.body, 'name') 
+                        self.nodesOrbits[f'nodeOrbit{orbitNb}_bodyRadius'] = conn.add_stream(getattr, nodes[orbitNb].orbit.body, 'equatorial_radius') 
+                        self.nodesOrbits[f'nodeOrbit{orbitNb}_periapsis'] = conn.add_stream(getattr, nodes[orbitNb].orbit, 'periapsis_altitude') 
+                        self.nodesOrbits[f'nodeOrbit{orbitNb}_SMajA'] = conn.add_stream(getattr, nodes[orbitNb].orbit, 'semi_major_axis') 
+                        self.nodesOrbits[f'nodeOrbit{orbitNb}_eccentricity'] = conn.add_stream(getattr, nodes[orbitNb].orbit, 'eccentricity') 
+                        self.nodesOrbits[f'nodeOrbit{orbitNb}_time_to_soi_change'] = conn.add_stream(getattr, nodes[orbitNb].orbit, 'time_to_soi_change')
                 break     
             except Exception as e:
                 print("Error in node creation :", e)

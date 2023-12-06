@@ -229,7 +229,7 @@ class Orb:
                 self.mainBodyAtmosphere.draw()
 
             #---------- TARGET BODY ----------
-
+            
             if hasattr(self, 'targetBody'):
                 self.targetBodyOffset = -offsetX+(zoom*self.targetBodyAltitude)
                 tempVertices = Orb.getCircleVertices(-200+self.targetBodyOffset,0, self.targetBodyRadius*zoom)
@@ -242,7 +242,6 @@ class Orb:
                 self.targetBodyAtmosphere.re_init(pts = tempVertices)
                 self.targetBodyAtmosphere.draw()
                 
-
     class Orbit:
         def __init__(self, controller, color, orbitType):
             self.controller = controller
@@ -285,8 +284,8 @@ class Orb:
                 
                 
             elif str(timeToSOIChange) != 'nan': #ORBIT IS NOT AN ELLIPSE OR VESSEL IS GOING TO CHANGE SOI
-                startTA = streams.trueAnomalyAt(self.UT+timeToSOIEnter)
-                endTA = streams.trueAnomalyAt(self.UT+timeToSOIChange)
+                startTA = streams.vesselOrbit.true_anomaly_at_ut(self.UT+timeToSOIEnter)
+                endTA = streams.vesselOrbit.true_anomaly_at_ut(self.UT+timeToSOIChange)
                 if endTA < startTA:
                     endTA += 2*math.pi
 
@@ -294,7 +293,6 @@ class Orb:
 
             self.secondaryOrbitsFigure[f'orbit{orbitNb}_figure'].re_init(pts = self.secondaryOrbitsFigure[f'orbit{orbitNb}_vertices'])
             self.secondaryOrbitsFigure[f'orbit{orbitNb}_figure'].draw()
-
 
         def draw(self, zoom, streams, planets): 
 
@@ -304,7 +302,7 @@ class Orb:
                 self.periapsis = int(streams.vesselPeriapsis())
                 self.SMajA = int(streams.vesselSMajA())          
                 self.eccentricity = float(streams.vesselEccentricity())
-                self.bodyOrbitingRadius = int(streams.bodyOrbitingRadius)            
+                self.bodyOrbitingRadius = int(streams.bodyOrbitingRadius())            
                 vesselTimeToSOIChange = streams.vesselTimeToSOIChange()
                 self.rotation = 0
                 self.positionX = 0
@@ -312,17 +310,21 @@ class Orb:
             
             elif self.type == "node":
                 orbit = streams.nodesOrbits[f'nodeOrbit0']()
-                orbitInfo.nodeEccentricAnomaly = streams.eccentricAnomalyAt(streams.nodesOrbits[f'nodeOrbit0_ut']())
-                self.bodyOrbiting = orbit.body.name
+                orbitInfo.nodeEccentricAnomaly = streams.vesselOrbit.eccentric_anomaly_at_ut(streams.nodesOrbits[f'nodeOrbit0_ut']())
+                self.bodyOrbiting = streams.nodesOrbits[f'nodeOrbit0_bodyName']()
                 self.periapsis = int(orbit.periapsis_altitude)
-                self.SMajA = int(orbit.semi_major_axis)          
+                self.SMajA = int(orbit.semi_major_axis)   
+                self.SMinA = int(orbit.semi_minor_axis)          
                 self.eccentricity = float(orbit.eccentricity)
-                self.bodyOrbitingRadius = int(orbit.body.equatorial_radius)            
+                self.bodyOrbitingRadius = int(streams.nodesOrbits[f'nodeOrbit0_bodyRadius']())            
                 vesselTimeToSOIChange = orbit.time_to_soi_change
 
                 self.rotation = orbitInfo.nodeEccentricAnomaly
-                self.positionX = -200
-                self.positionY = 0
+
+                nodeOrbPosX = self.SMajA*math.cos(self.rotation)
+                nodeOrbPosY = self.SMinA*math.sin(self.rotation)
+                self.positionX = -200+(nodeOrbPosX*zoom)
+                self.positionY = nodeOrbPosY*zoom
 
             self.UT = int(streams.UT())
 
@@ -336,8 +338,8 @@ class Orb:
             elif self.eccentricity < 1 and str(vesselTimeToSOIChange) != 'nan': #ORBIT IS AN ELLIPSE AND VESSEL IS GOING TO CHANGE SOI
                 self.apoapsis = int(streams.vesselApoapsis())
                 self.SMinA = int(streams.vesselSMinA())
-                startTA = streams.eccentricAnomalyAt(self.UT)
-                endTA = streams.eccentricAnomalyAt(self.UT+vesselTimeToSOIChange)
+                startTA = streams.vesselOrbit.eccentric_anomaly_at_ut(self.UT)
+                endTA = streams.vesselOrbit.eccentric_anomaly_at_ut(self.UT+vesselTimeToSOIChange)
                 if endTA < startTA:
                     endTA += 2*math.pi
                 orbitInfo.vertices = Orb.getEllipseVertices(-200,0, self.SMajA*zoom,self.SMinA*zoom, startTA, endTA)
@@ -345,8 +347,8 @@ class Orb:
             elif self.eccentricity > 1 and str(vesselTimeToSOIChange) != 'nan': #ORBIT IS NOT AN ELLIPSE AND VESSEL IS GOING TO CHANGE SOI
                 self.apoapsis = 0
                 self.SMinA = 0
-                startTA = streams.trueAnomalyAt(self.UT)
-                endTA = streams.trueAnomalyAt(self.UT+vesselTimeToSOIChange)
+                startTA = streams.vesselOrbit.true_anomaly_at_ut(self.UT)
+                endTA = streams.vesselOrbit.true_anomaly_at_ut(self.UT+vesselTimeToSOIChange)
                 if endTA < startTA:
                     endTA += 2*math.pi
                 orbitInfo.vertices = Orb.getHyperbolaVertices(-200,0, self.eccentricity, self.SMajA*zoom, self.periapsis*zoom, startTA, endTA)
@@ -359,6 +361,7 @@ class Orb:
             self.orbit.rotateToZ(math.degrees(self.rotation))
             self.orbit.draw()
 
+            
             #---------- TRY ANY SECONDARY ORBITS ----------
 
             if hasattr(streams, 'secondaryOrbits'):
@@ -393,7 +396,7 @@ class Orb:
                                 self.drawSecondaryOrbits(zoom, planets.targetBodyOffset+(planets.targetBodyRadius*zoom)+(planets.mainBodyRadius*zoom), streams, orbitNb)
                     
                     orbitNb += 1
-
+            
 
         def getBounds(self):
             bounds = []
@@ -424,7 +427,7 @@ class Orb:
             self.periapsis = int(streams.vesselPeriapsis())
             self.SMajA = int(streams.vesselSMajA())          
             self.eccentricity = float(streams.vesselEccentricity())
-            self.bodyOrbitingRadius = int(streams.bodyOrbitingRadius)
+            self.bodyOrbitingRadius = int(streams.bodyOrbitingRadius())
             self.UT = int(streams.UT())
             self.eccentricAnomaly = float(streams.vesselEccentricAnomaly())
             vesselTimeToSOIChange = streams.vesselTimeToSOIChange()
@@ -548,11 +551,11 @@ class Orb:
 
         if self.prevNodes != streams.nodesNb: #IF UPDATE OF THE NODES, CREATE NEW ASSETS
             if streams.nodesNb > 0:
-                self.nodeOrbit = self.Orbit(self.controller, orange, "node")
-                print("created node orbit")
+                #self.nodeOrbit = self.Orbit(self.controller, orange, "node")
+                pass
+            
             else:
                 del self.nodeOrbit 
-                print("deleted node orbit")
 
         if streams.nodesNb > 0 : #IF ASSETS EXISTS, DRAW THEM
             self.nodeOrbit.draw(self.zoom, streams, self.planets)
