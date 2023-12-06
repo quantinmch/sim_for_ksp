@@ -17,8 +17,9 @@ from pages.propellant import Prop
 from pages.stby import Stby
 from pages.orbit import Orb
 from pages.tgtmgm import TgtMgm
+from pages.autopilot import Autopilot
 
-pages_list = [Nav, Prop, Stby, Pwr, Orb, TgtMgm]
+pages_list = [Nav, Prop, Stby, Pwr, Orb, TgtMgm, Autopilot]
 
 class Disp:
     def __init__(self):
@@ -85,12 +86,12 @@ class Disp:
         try_to_connect=True
 
         #Creation de l'app (classe de connection avec le simulateur)
-        app = Application(self.DISPLAY)
+        self.app = Application(self.DISPLAY)
   
 
         #Creation des threads
-        sim_connect_thread = threading.Thread(target=app.connect, daemon=True)
-        sim_vigil_thread = threading.Thread(target=app.loop, daemon=True)
+        sim_connect_thread = threading.Thread(target=self.app.connect, daemon=True)
+        sim_vigil_thread = threading.Thread(target=self.app.loop, daemon=True)
         sim_vigil_thread.start()
         
         #Boucle d'affichage (infinie)
@@ -110,7 +111,7 @@ class Disp:
 
 
             try:
-                if not app.ready() : 
+                if not self.app.ready() : 
                     self.draw_page('Stby', True)
                     if try_to_connect == True:
                         sim_connect_thread.start()
@@ -118,7 +119,7 @@ class Disp:
 
                 else:
                     try:
-                        streams = app.get_streams()
+                        streams = self.app.get_streams()
                         i2c.getStreams(streams)
                         self.draw_page(current_page, streams)
 
@@ -135,12 +136,13 @@ class Disp:
             except Exception as e: 
                 print("Connection error : ", e)
                 self.draw_page('Stby', True)
-                app.disconnect()
-                app.game_connected = False
-                app.vessel_connected = False
+                self.app.disconnect()
+                self.app.game_connected = False
+                self.app.vessel_connected = False
 
             self.log.display_text()
             self.alarms.display()
 
     def stop(self):
+        self.app.disconnect()
         self.DISPLAY.destroy()

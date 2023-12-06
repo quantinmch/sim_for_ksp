@@ -126,6 +126,7 @@ class Streams:
         
         self.createEngines()
         self.createLdgGears()
+        self.createAutopilot()
 
         self.resources = {}
         resources_thread = threading.Thread(target=self.getResources, daemon=True)
@@ -156,6 +157,23 @@ class Streams:
         self.engineOVH = False
         self.meco = False
         self.gearsBroken = False
+
+    def createAutopilot(self):
+        try:
+            autopilot = self.conn.mech_jeb
+            
+            self.ascentAP = autopilot.ascent_autopilot
+            self.AP_Ascent_enabled = self.conn.add_stream(getattr, self.ascentAP ,'enabled')
+            self.AP_Ascent_status = self.conn.add_stream(getattr, self.ascentAP ,'status')
+            self.AP_Ascent_path = self.conn.add_stream(getattr, self.ascentAP ,'ascent_path_index')
+            self.AP_Ascent_inclination = self.conn.add_stream(getattr, self.ascentAP ,'desired_inclination')
+            self.AP_Ascent_altitude = self.conn.add_stream(getattr, self.ascentAP ,'desired_orbit_altitude')
+            self.AP_Ascent_force_roll = self.conn.add_stream(getattr, self.ascentAP ,'force_roll')
+            self.AP_Ascent_roll = self.conn.add_stream(getattr, self.ascentAP ,'turn_roll')
+            self.AP_Ascent_Autostage = self.conn.add_stream(getattr, self.ascentAP ,'autostage') 
+
+        except Exception as e:
+            print("Error in the creation of autopilot : ", e) 
 
     def createLdgGears(self):
         self.ldgGearData = []
@@ -245,7 +263,10 @@ class Streams:
                 if self.vessel.resources.has_resource(propellant):
                     self.resources[f'{propellant}_amount'] = self.vessel.resources.amount(propellant)
                     self.resources[f'{propellant}_max'] = self.vessel.resources.max(propellant)
-
+                else:
+                    self.resources[f'{propellant}_amount'] = 0
+                    self.resources[f'{propellant}_max'] = 0
+                    
     def setTarget(self, target):
         if target in self.vesselsNames:
             for vessel in self.vessels :
@@ -484,7 +505,7 @@ class Streams:
                 else:
                     del self.resources[f'{resource}_max']
                     del self.resources[f'{resource}_amount']
-                    cmd.append("Reinit_page_propellant")
+                    #cmd.append("Reinit_page_Prop")
 
             
 

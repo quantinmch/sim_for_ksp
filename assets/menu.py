@@ -179,6 +179,9 @@ class Menu:
         
         self.pagesList[menu] = temp
 
+    def getPage(self):
+        return text_data.page
+
     def run(self):
 
         

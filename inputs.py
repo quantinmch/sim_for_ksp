@@ -21,21 +21,24 @@ INPUTS - Gère les boutons connectés à la raspberry
 arduino = serial.Serial('/dev/ttyUSB0', 9600, timeout=0.01)
 arduino.reset_input_buffer()
 
-
+recentInputs = []
 
 def keyboard_input(display):
+    global recentInputs
+
     buttons = Buttons()
 
     while True:
         #Decode serial from arduino -> imput from keyboard
         line = arduino.readline().decode('utf-8').rstrip()
         if len(line) != 0:
-            if line == 'I':
+            if line == 'F':
                 display.stop()
             elif line == 'D':
                 log.append("MASTER RESET")
                 cmd.append("conn_reset")
-            print(line)
+            #print(line)
+            recentInputs.append(line)
 
 
         #Check for any side button pressed
@@ -43,6 +46,10 @@ def keyboard_input(display):
         if temp != None:
             cmd.append(temp)
                 
+def getInput():
+    if len(recentInputs) != 0:
+        return recentInputs.pop()
+    else: return None
 
 class Buttons:
     def __init__(self):     
@@ -69,7 +76,7 @@ class Buttons:
                 return 'Page_Orb'
                 self.coolDown = 0
             elif GPIO.event_detected(5):
-                return 'Page_Au-P'
+                return 'Page_Autopilot'
                 self.coolDown = 0
             elif GPIO.event_detected(6):
                 return 'Page_Man'
