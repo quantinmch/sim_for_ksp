@@ -1,10 +1,11 @@
 
-from math import sin, cos
+from math import sin, cos, exp
 import pi3d, os
 import math
 import numpy as np
 import time
 import krpc
+from datetime import timedelta
 
 
 red = (1.0, 0.0 , 0.0, 1.0)
@@ -57,6 +58,12 @@ class TextData(object):
     alt_ind1 = 1
     alt_ind2 = 3
 
+    mnvTime = "0"
+    mnvDuration = "0"
+    mnvDV = "0"
+
+    notused = ""
+
 
 text_data = TextData()
 
@@ -88,9 +95,26 @@ class Nav:
         self.prograde_marker=Marker("prograde")
 
         self.alt_text = pi3d.PointText(controller.pointFont, controller.CAMERA2D, max_chars=400, point_size=64)
-        self.text = pi3d.PointText(controller.pointFont, controller.CAMERA2D, max_chars=400, point_size=64, )
+        self.text = pi3d.PointText(controller.pointFont, controller.CAMERA2D, max_chars=400, point_size=64)
+        self.mnv_text = pi3d.PointText(controller.pointFont, controller.CAMERA2D, max_chars=100, point_size=64, )
         
         espace = 0.40
+        newtxt = pi3d.TextBlock(0, -300, 0.1, 0.0, 50, data_obj=text_data, attr="notused",
+                text_format="- Node in T -- DV (m/s) -- est. Burn T -", size=0.5, spacing="C", space=espace, justify = 0.5,
+                colour=blue)
+        self.mnv_text.add_text_block(newtxt)
+        newtxt = pi3d.TextBlock(-180, -330, 0.1, 0.0, 10, data_obj=text_data, attr="mnvTime",
+                text_format="{:s}", size=0.5, spacing="C", space=espace, justify = 0.5,
+                colour=blue)
+        self.mnv_text.add_text_block(newtxt)
+        newtxt = pi3d.TextBlock(160, -330, 0.1, 0.0, 10, data_obj=text_data, attr="mnvDuration",
+                text_format="{:s}", size=0.5, spacing="C", space=espace, justify = 0.5,
+                colour=blue)
+        self.mnv_text.add_text_block(newtxt)
+        newtxt = pi3d.TextBlock(0, -330, 0.1, 0.0, 10, data_obj=text_data, attr="mnvDV",
+                text_format="{:s}", size=0.5, spacing="C", space=espace, justify = 0.5,
+                colour=blue)
+        self.mnv_text.add_text_block(newtxt)
         newtxt = pi3d.TextBlock(30, 308, 0.1, 0.0, 10, data_obj=text_data, attr="heading",
                 text_format="{:2.1f}", size=0.5, spacing="C", space=espace, justify = 1,
                 colour=blue)
@@ -197,6 +221,22 @@ class Nav:
         self.alt_indicator = pi3d.Plane(w=10, h=400, x=347, y=0)
         self.alt_indicator.set_material(green)
         
+    def calculateBurnTime(self, streams):
+        Ml = streams.mass()
+        Isp = streams.Isp()
+        g = streams.bodyGravity()
+        F = streams.max_thrust()
+        dV = streams.nodesOrbits[f'nodeOrbit0_dV']()
+
+        Ev = Isp*g
+
+        result = ((Ml*Ev)/F)*(1-exp(-(dV/Ev)))
+
+        return(str(timedelta(seconds=int(result))))
+
+
+
+
 
     def show(self, streams, first_call, encoder=0):
         try:
@@ -232,10 +272,28 @@ class Nav:
 
                 if len(streams.nodes()):
                     self.mnv_txt.colouring.set_colour(blue)
+                    dV = int(streams.nodesOrbits[f'nodeOrbit0_dV']())
+
+                    if dV != 0:
+                        text_data.mnvTime = str(timedelta(seconds=int(streams.nodesOrbits[f'nodeOrbit0_time_to']())))
+                        if streams.max_thrust() > 0: 
+                            text_data.mnvDuration = self.calculateBurnTime(streams)
+                        else: 
+                            text_data.mnvDuration = "n/a"
+                        text_data.mnvDV = str(dV)+"m/s"
+                    else:
+                        text_data.mnvTime = str(timedelta(seconds=int(streams.nodesOrbits[f'nodeOrbit0_time_to']())))
+                        text_data.mnvDuration = "n/a"
+                        text_data.mnvDV = "0m/s"
+
+
+                    self.mnv_text.regen()
+                    self.mnv_text.draw()
                 else:
                     self.mnv_txt.colouring.set_colour(gray)
 
-            except :
+            except Exception as e:
+                print(e)
                 self.mnv_txt.colouring.set_colour(gray)
 
             if streams.targetVessel() != None:
@@ -325,7 +383,9 @@ class Nav:
             self.throttle_bar.scale(temp, 1, 1)
             self.throttle_bar.positionX(-578+((250*temp)/2))
 
-            temp = streams.altitude()
+
+            if streams.meanAltitude() < 70000: temp = streams.altitude()
+            else: temp = streams.meanAltitude()
 
             if temp < 100000:
                 text_data.altUnite = int(temp%100)

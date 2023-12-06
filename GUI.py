@@ -100,6 +100,7 @@ class Streams:
         self.thrust = conn.add_stream(getattr, vessel, 'thrust')
         self.max_thrust = conn.add_stream(getattr, vessel, 'max_thrust')
         self.mass = conn.add_stream(getattr, vessel, 'mass')
+        self.Isp = conn.add_stream(getattr, vessel, 'specific_impulse')
 
         self.mode = conn.add_stream(getattr, vessel.control, 'speed_mode')
 
@@ -118,6 +119,7 @@ class Streams:
         self.throttle = conn.add_stream(getattr, vessel.control, 'throttle')
         self.speed = conn.add_stream(getattr, vessel.flight(srfRefFrame), 'speed')
         self.altitude = conn.add_stream(getattr, vessel.flight(), 'surface_altitude')
+        self.meanAltitude = conn.add_stream(getattr, vessel.flight(), 'mean_altitude')
 
         self.prograde = conn.add_stream(getattr, vessel.flight(srfRefFrame), 'prograde')
 
@@ -146,6 +148,7 @@ class Streams:
         self.vesselTimeToSOIChange = conn.add_stream(getattr, vessel.orbit, 'time_to_soi_change')
         self.bodyOrbitingRadius = conn.add_stream(getattr, vessel.orbit.body, 'equatorial_radius')
         self.bodyOrbiting =  conn.add_stream(getattr, vessel.orbit.body, 'name')
+        self.bodyGravity = conn.add_stream(getattr, vessel.orbit.body, 'surface_gravity')
 
         self.nextOrbit = conn.add_stream(getattr, self.vesselOrbit, 'next_orbit')
         self.nextOrbit.add_callback(self.orbits_update)
@@ -310,7 +313,9 @@ class Streams:
                 if len(nodes) > 0:
                     for orbitNb in range(len(nodes)):
                         self.nodesOrbits[f'nodeOrbit{orbitNb}'] = conn.add_stream(getattr, nodes[orbitNb], 'orbit')
-                        self.nodesOrbits[f'nodeOrbit{orbitNb}_ut'] = conn.add_stream(getattr, nodes[orbitNb], 'ut')   
+                        self.nodesOrbits[f'nodeOrbit{orbitNb}_ut'] = conn.add_stream(getattr, nodes[orbitNb], 'ut') 
+                        self.nodesOrbits[f'nodeOrbit{orbitNb}_time_to'] = conn.add_stream(getattr, nodes[orbitNb], 'time_to')   
+                        self.nodesOrbits[f'nodeOrbit{orbitNb}_dV'] = conn.add_stream(getattr, nodes[orbitNb], 'remaining_delta_v')
 
                         self.nodesOrbits[f'nodeOrbit{orbitNb}_bodyName'] = conn.add_stream(getattr, nodes[orbitNb].orbit.body, 'name') 
                         self.nodesOrbits[f'nodeOrbit{orbitNb}_bodyRadius'] = conn.add_stream(getattr, nodes[orbitNb].orbit.body, 'equatorial_radius') 
