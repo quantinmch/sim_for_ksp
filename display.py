@@ -18,8 +18,9 @@ from pages.stby import Stby
 from pages.orbit import Orb
 from pages.tgtmgm import TgtMgm
 from pages.autopilot import Autopilot
+from pages.rendezvous import Rdv
 
-pages_list = [Nav, Prop, Stby, Pwr, Orb, TgtMgm, Autopilot]
+pages_list = [Nav, Prop, Stby, Pwr, Orb, TgtMgm, Autopilot, Rdv]
 
 class Disp:
     def __init__(self):
@@ -40,7 +41,9 @@ class Disp:
         self.font_colour = (255, 255, 255, 255)
         self.working_directory = os.path.dirname(os.path.realpath(__file__))
         self.font_path = os.path.abspath(os.path.join(self.working_directory, 'fonts', 'B612-Bold.ttf'))
+        self.segoi_font_path = os.path.abspath(os.path.join(self.working_directory, 'fonts', 'B612-Regular.ttf'))
         self.pointFont = pi3d.Font(self.font_path, self.font_colour, codepoints=list(range(32,128)))
+        self.segoiFont = pi3d.Font(self.segoi_font_path, self.font_colour, codepoints=list(range(32,128)))
         
         #Liste de pages (init. vide)
         self.listing = {} 
