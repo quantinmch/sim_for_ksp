@@ -273,19 +273,22 @@ class Nav:
                 if len(streams.nodes()):
                     self.mnv_txt.colouring.set_colour(blue)
                     dV = int(streams.nodesOrbits[f'nodeOrbit0_dV']())
+                    timeToNode = int(streams.nodesOrbits[f'nodeOrbit0_time_to']())
 
                     if dV != 0:
-                        text_data.mnvTime = str(timedelta(seconds=int(streams.nodesOrbits[f'nodeOrbit0_time_to']())))
                         if streams.max_thrust() > 0: 
                             text_data.mnvDuration = self.calculateBurnTime(streams)
                         else: 
                             text_data.mnvDuration = "n/a"
                         text_data.mnvDV = str(dV)+"m/s"
                     else:
-                        text_data.mnvTime = str(timedelta(seconds=int(streams.nodesOrbits[f'nodeOrbit0_time_to']())))
                         text_data.mnvDuration = "n/a"
                         text_data.mnvDV = "0m/s"
 
+                    if timeToNode >= 0:
+                        text_data.mnvTime = str(timedelta(seconds=timeToNode))
+                    else:
+                        text_data.mnvTime = "0"
 
                     self.mnv_text.regen()
                     self.mnv_text.draw()
