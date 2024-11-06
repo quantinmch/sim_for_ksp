@@ -1,36 +1,51 @@
+# SPDX-FileCopyrightText: 2017 Tony DiCola for Adafruit Industries
+# SPDX-FileCopyrightText: 2017 James DeVito for Adafruit Industries
+# SPDX-License-Identifier: MIT
 
-import krpc
+# This example is for use on (Linux) computers that are using CPython with
+# Adafruit Blinka to support CircuitPython libraries. CircuitPython does
+# not support PIL/pillow (python imaging library)!
+
 import time
+import subprocess
 
-# Connexion au serveur kRPC
-conn = krpc.connect(name='MFCD V0.4', address = "192.168.1.4", rpc_port=50000, stream_port=50001)
+from board import SCL, SDA
+import busio
+from PIL import Image, ImageDraw, ImageFont
+import adafruit_ssd1306
 
-# Get the active vessel
-vessel = conn.space_center.active_vessel
 
-# Set up a stream to get the current MET (Mission Elapsed Time)
-met_stream = conn.add_stream(getattr, conn.space_center, 'ut')
+# Create the I2C interface.
+# import the library
+from adafruit_extended_bus import ExtendedI2C as I2C
 
-# Main loop
+
+# access the I2C port by bus number
+i2c=I2C(3)
+
+
+from adafruit_servokit import ServoKit
+
 try:
-    while True:
-        # Get the current time
-        current_time = met_stream()
+    kit = ServoKit(channels=16, i2c=i2c)
+    
+    for i in range (2):
+        kit.servo[i].set_pulse_width_range(500, 2500)
+        kit.servo[i].actuation_range = 270
 
-        # Display the time and fuel levels
-        
+except:
+    pass
 
-        amount = []
-        for resource in vessel.resources.names:
-            amount.append((vessel.resources.amount(resource)/vessel.resources.max(resource))*100)
 
-        print("\033c")
-        print(str(amount))
-
-        # Wait for 1/25th of a second (0.04 seconds) before the next iteration
-        #time.sleep(0.04)
-
-except KeyboardInterrupt:
-    # Close the connection when the script is interrupted (e.g., by pressing Ctrl+C)
-    conn.close()
-
+while True:
+    try:
+        kit.servo[0].angle = 0
+        time.sleep(1)
+        kit.servo[1].angle = 0
+        time.sleep(1)
+        kit.servo[0].angle = 270
+        time.sleep(1)
+        kit.servo[1].angle = 270
+        time.sleep(1)
+    except:
+        pass

@@ -9,7 +9,7 @@ from alarms import masterAlarm, masterCaution
 
 existingNodes = False
 
-IP = "192.168.1.4"
+IP = "192.168.0.101"
 
 class Part:
     name = None
@@ -94,6 +94,8 @@ class Streams:
         self.g_force = conn.add_stream(getattr, vessel.flight(), 'g_force')
 
         self.targetVessel = conn.add_stream(getattr, conn.space_center, 'target_vessel')
+        self.targetVessel.add_callback(self.targetVessel_update)
+        self.targetVessel.start()
         self.targetBody = conn.add_stream(getattr, conn.space_center, 'target_body')
         self.targetDockingPort = conn.add_stream(getattr, conn.space_center, 'target_docking_port')
 
@@ -149,6 +151,7 @@ class Streams:
         self.bodyOrbitingRadius = conn.add_stream(getattr, vessel.orbit.body, 'equatorial_radius')
         self.bodyOrbiting =  conn.add_stream(getattr, vessel.orbit.body, 'name')
         self.bodyGravity = conn.add_stream(getattr, vessel.orbit.body, 'surface_gravity')
+       
 
         self.nextOrbit = conn.add_stream(getattr, self.vesselOrbit, 'next_orbit')
         self.nextOrbit.add_callback(self.orbits_update)
@@ -161,11 +164,13 @@ class Streams:
         self.meco = False
         self.gearsBroken = False
 
+        self.stageLocked = False
+        
     def createAutopilot(self):
         try:
-            autopilot = self.conn.mech_jeb
+            self.autopilot = self.conn.mech_jeb
             
-            self.ascentAP = autopilot.ascent_autopilot
+            self.ascentAP = self.autopilot.ascent_autopilot
             self.AP_Ascent_enabled = self.conn.add_stream(getattr, self.ascentAP ,'enabled')
             self.AP_Ascent_status = self.conn.add_stream(getattr, self.ascentAP ,'status')
             self.AP_Ascent_path = self.conn.add_stream(getattr, self.ascentAP ,'ascent_path_index')
@@ -296,6 +301,23 @@ class Streams:
             self.vessel.parts.controlling = self.dockingPortsDict[refPart]
             self.partControlling = self.conn.add_stream(getattr, self.vessel.parts, 'controlling')
             log.append('Selected ' + refPart + 'as reference part')
+
+    def targetVessel_update(self, target):
+        try:
+            if target != None:
+                self.target = target
+                self.targetName = self.conn.add_stream(getattr, target, 'name')
+                self.targetOrbiting = self.conn.add_stream(getattr, target.orbit.body, 'name')
+                self.targetClosestApproachDist = self.conn.add_stream(self.vessel.orbit.distance_at_closest_approach, target.orbit)
+                self.targetClosestApproachTime = self.conn.add_stream(self.vessel.orbit.time_of_closest_approach, target.orbit)
+                self.targetRelIncl = self.conn.add_stream(self.vessel.orbit.relative_inclination, target.orbit)
+                self.positionInTargetReferenceFrame = self.conn.add_stream(self.vessel.position, target.reference_frame)
+                self.velocityInTargetReferenceFrame = self.conn.add_stream(self.vessel.velocity, target.reference_frame)
+                self.targetApprSpeed = None
+                print("target update")
+        except Exception as e:
+            print(e)
+            
 
     def nodes_update(self, nodes):
         vessel = self.vessel
