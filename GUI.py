@@ -271,9 +271,6 @@ class Streams:
                 if self.vessel.resources.has_resource(propellant):
                     self.resources[f'{propellant}_amount'] = self.vessel.resources.amount(propellant)
                     self.resources[f'{propellant}_max'] = self.vessel.resources.max(propellant)
-                else:
-                    self.resources[f'{propellant}_amount'] = 0
-                    self.resources[f'{propellant}_max'] = 0
                     
     def setTarget(self, target):
         if target in self.vesselsNames:
@@ -529,10 +526,6 @@ class Streams:
 
                     if quantity < 0.1:
                         masterAlarm.append("Low"+str(resource))                                                 #Si quantité <10%, alarm
-                else:
-                    del self.resources[f'{resource}_max']
-                    del self.resources[f'{resource}_amount']
-                    #cmd.append("Reinit_page_Prop")
 
             
 
