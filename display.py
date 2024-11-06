@@ -134,9 +134,11 @@ class Disp:
                             framecount = 0
                             
                     except Exception as e:
+                        log.append('Running error :'+ str(e))
                         print("RUNNING ERROR : ", e)
 
             except Exception as e: 
+                log.append('Connection error :'+ str(e))
                 print("Connection error : ", e)
                 self.draw_page('Stby', True)
                 self.app.disconnect()
