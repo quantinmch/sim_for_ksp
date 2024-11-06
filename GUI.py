@@ -271,6 +271,7 @@ class Streams:
                 if self.vessel.resources.has_resource(propellant):
                     self.resources[f'{propellant}_amount'] = self.vessel.resources.amount(propellant)
                     self.resources[f'{propellant}_max'] = self.vessel.resources.max(propellant)
+        time.sleep(1/10)
                     
     def setTarget(self, target):
         if target in self.vesselsNames:
