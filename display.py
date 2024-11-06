@@ -2,7 +2,7 @@ import pi3d
 import os 
 import time
 import krpc
-import threading
+import threading, traceback
 
 from inputs import Buttons
 from assets.encoder import encoder
@@ -135,7 +135,7 @@ class Disp:
                             
                     except Exception as e:
                         log.append('Running error :'+ str(e))
-                        print("RUNNING ERROR : ", e)
+                        print("RUNNING ERROR : ", traceback.format_exc())
 
             except Exception as e: 
                 log.append('Connection error :'+ str(e))
