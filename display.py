@@ -116,6 +116,7 @@ class Disp:
             try:
                 if not self.app.ready() : 
                     self.draw_page('Stby', True)
+                    self.log.display_disconnected()
                     if try_to_connect == True:
                         sim_connect_thread.start()
                         try_to_connect = False

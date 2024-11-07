@@ -28,6 +28,10 @@ class Msgbox():
 
         self.t_end = 0
 
+        self.disconnectedText = pi3d.FixedString('fonts/B612-Bold.ttf', "DISCONNECTED", font_size=35, background_color='red',
+                                camera=display.CAMERA2D, justify='C', shader=display.flatsh, f_type='SMOOTH')
+        self.disconnectedText.sprite.position(0, 300, 2)
+
 
     def display_text(self):
         if len(log) != self.prev_queue_size and log:
@@ -41,5 +45,8 @@ class Msgbox():
         self.text.draw()
         self.prev_queue_size = len(log)
 
+    def display_disconnected(self):
+        self.disconnectedText.draw()
+        
     def display_fps(self, fps):
         text_data.fps = fps

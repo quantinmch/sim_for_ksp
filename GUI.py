@@ -518,7 +518,7 @@ class Streams:
     def alarms_vigil(self):
         global masterCaution, masterAlarm
 
-        for resource in ('ElectricCharge', 'SolidFuel','MonoPropellant', 'LiquidFuel', 'Oxidizer', 'IntakeAir', 'Ablator'): #For : tous les propellants du caution panel 
+        for resource in ('ElectricCharge', 'SolidFuel','MonoPropellant', 'LiquidFuel', 'Oxidizer', 'Ablator'): #For : tous les propellants du caution panel 
             if (resource+"_max") in self.resources:                                                             #Si ce propellant existe (dans le vaisseau actuel)
                 if self.resources[f'{resource}_max'] != 0:                                                      #Si le max n'et pas nul (cas ou le reservoir vient d'être largué)
                     quantity = self.resources[f'{resource}_amount']/self.resources[f'{resource}_max']           #Obtiens la quantité restante

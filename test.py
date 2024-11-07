@@ -30,7 +30,7 @@ try:
     kit = ServoKit(channels=16, i2c=i2c)
     
     for i in range (2):
-        kit.servo[i].set_pulse_width_range(500, 2500)
+        kit.servo[i].set_pulse_width_range(300, 2700)
         kit.servo[i].actuation_range = 270
 
 except:
