@@ -6,7 +6,7 @@ import adafruit_ssd1306
 from PIL import Image, ImageDraw, ImageFont
 
 from panels.annunciator import writeAnnunciator
-from panels.instruments import writeInstrL
+from panels.instruments import writeInstrL, initInstruments, writeInstR
 from panels.ldgGears import writeLdgGears, readLdgGears
 from panels.stage import writeStage, readStage, initStageDisplay
 
@@ -42,6 +42,7 @@ def getStreams(inputStream):
 def dataExport():
     global streams 
     stageScreenInitialized = False
+    motorsInitialized = False
 
     image = Image.new("1", (32, 128))
     draw = ImageDraw.Draw(image)
@@ -71,7 +72,7 @@ def dataExport():
 
         except Exception as e:
             print('Landing gear pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
-        '''
+        
         try:
             stageData = writeStage(streams)
             i2cBus.try_lock()
@@ -81,13 +82,28 @@ def dataExport():
             readStage(streams, temp)
             i2cBus.unlock()
             #i2cBus.write_i2c_block_data(stageAdress, 0, stageData)
-           #readStage(streams, i2cBus.read_i2c_block_data(stageAdress, 0, 1))
+            #readStage(streams, i2cBus.read_i2c_block_data(stageAdress, 0, 1))
 
         except Exception as e:
             print('Stage pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
+        '''
 
+        try:
+            if motorsInitialized == False:
+                initInstruments(i2cBus)
+                motorsInitialized = True
+                
+        except Exception as e:
+            print('Motors initialisation error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
+            motorsInitialized = False
 
-        
+        if motorsInitialized == True:
+            try:
+                writeInstR(streams)
+            except Exception as e:
+                print('Left instruments pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
+
+        '''
         try:
             if stageScreenInitialized == False:
                 try:
@@ -101,5 +117,8 @@ def dataExport():
         except Exception as e:
             print('Stage screen error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
             stageScreenInitialized = False
+        ''' 
+
+        
 
         time.sleep(1/25)
