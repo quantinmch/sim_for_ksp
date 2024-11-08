@@ -1,6 +1,6 @@
 from adafruit_servokit import ServoKit
-global servoMotors, servoTuning
-NBServos = 6
+global servoMotors, servoTuning, Max_G
+NBServos = 8
 
 def writeInstrL(streams):
     data = []
@@ -15,9 +15,10 @@ def writeInstrL(streams):
     return data
 
 def initInstruments(i2cBus):
-    global servoMotors, servoTuning
+    global servoMotors, servoTuning, Max_G
+    Max_G = 0
 
-    servoTuning = [[259, 14], [252, 8], [259, 15], [263, 22], [15, 258], [260, 15]]
+    servoTuning = [[259, 14], [252, 8], [259, 15], [263, 22], [15, 258], [260, 15], [17,250], [245,25]]
 
     servoMotors = ServoKit(channels=16, i2c=i2cBus)
     
@@ -25,10 +26,11 @@ def initInstruments(i2cBus):
         servoMotors.servo[i].set_pulse_width_range(300, 2700)
         servoMotors.servo[i].actuation_range = 270
 
+
     
 
 def writeInstR(streams):
-    global servoMotors
+    global servoMotors, Max_G
 
     if streams == None:
         for i in range (NBServos):
@@ -72,3 +74,21 @@ def writeInstR(streams):
             servoMotors.servo[5].angle = servoRange-(percentage*servoRange)+servoTuning[5][1]
         else: 
             servoMotors.servo[5].angle = servoTuning[5][0]
+
+        #ACCELERATION - Current
+        current_g = streams.g_force()
+        if current_g > 14:
+            current_g = 14
+
+        servoRange = servoTuning[6][1] - servoTuning[6][0]
+        percentage = current_g/14
+        servoMotors.servo[6].angle = (percentage*servoRange)+servoTuning[6][0]
+        #Maj de Max_G
+        if current_g > Max_G: 
+            Max_G = current_g
+
+        #ACCELERATION - Max
+        percentage = Max_G/14
+        servoRange = servoTuning[7][0] - servoTuning[7][1]
+        servoMotors.servo[7].angle = servoRange-(percentage*servoRange)+servoTuning[7][1]
+        

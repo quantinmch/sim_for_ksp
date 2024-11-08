@@ -29,7 +29,8 @@ from adafruit_servokit import ServoKit
 try:
     kit = ServoKit(channels=16, i2c=i2c)
     
-    for i in range (7):
+    for i in range (9
+                    ):
         kit.servo[i].set_pulse_width_range(300, 2700)
         kit.servo[i].actuation_range = 270
 
@@ -41,19 +42,18 @@ except Exception as e:
 while True:
     try:
         print("0")
-        for s in range(7):
-            for a in range(270):
-                kit.servo[s].angle = a
-                time.sleep(1/50)
-            
+        kit.servo[6].angle = 17
+        time.sleep(1)
+        kit.servo[7].angle = 250
+        time.sleep(2)
 
-        time.sleep(5)
         print("270")
-        for s in range(7):
-            for a in range(270):
-                kit.servo[s].angle = 270-a
-                time.sleep(1/50)
-        time.sleep(5)
+        kit.servo[6].angle = 245
+        time.sleep(1)
+        kit.servo[7].angle = 25
+        time.sleep(2)
+
     except Exception as e: 
         print(str(e))
+
     time.sleep(1)

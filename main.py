@@ -15,8 +15,8 @@ screen = Disp()
 
 input_thread = threading.Thread(target=keyboard_input, args=(screen, ), daemon=True)
 input_thread.start()
-#i2c_thread = threading.Thread(target=dataExport, daemon=True)
-#i2c_thread.start()
+i2c_thread = threading.Thread(target=dataExport, daemon=True)
+i2c_thread.start()
 
 screen.run()
 print("program ended by manual input")

@@ -50,14 +50,9 @@ def dataExport():
     font = ImageFont.load_default()
 
     while(1):
+
+        #------------------- ANNUNCIATORS --------------------------
         '''
-        try:
-            SpdHdgData = writeInstrL(streams)
-            i2cBus.write_i2c_block_data(spdHdgAdress, 0, SpdHdgData)
-
-        except Exception as e:
-            print('Instruments pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
-
         try:
             annData = writeAnnunciator(streams)
             i2cBus.write_i2c_block_data(annunciatorAdress, 0, annData)
@@ -65,6 +60,10 @@ def dataExport():
         except Exception as e:
             print('Annunciator pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
 
+        '''
+
+        #------------------- LANDING GEAR --------------------------
+        '''
         try:
             ldgGearData = writeLdgGears(streams)
             i2cBus.write_i2c_block_data(ldgGearsAdress, 0, ldgGearData)
@@ -73,20 +72,8 @@ def dataExport():
         except Exception as e:
             print('Landing gear pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
         
-        try:
-            stageData = writeStage(streams)
-            i2cBus.try_lock()
-            i2cBus.writeto(stageAdress, stageData)
-            temp = bytearray(1)
-            i2cBus.readfrom_into(stageAdress, temp)
-            readStage(streams, temp)
-            i2cBus.unlock()
-            #i2cBus.write_i2c_block_data(stageAdress, 0, stageData)
-            #readStage(streams, i2cBus.read_i2c_block_data(stageAdress, 0, 1))
-
-        except Exception as e:
-            print('Stage pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
         '''
+        #------------------- INSTRUMENTS LEFT --------------------------
 
         try:
             if motorsInitialized == False:
@@ -103,7 +90,9 @@ def dataExport():
             except Exception as e:
                 print('Left instruments pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
 
+        #------------------- STAGE --------------------------
         '''
+        #SCREEN
         try:
             if stageScreenInitialized == False:
                 try:
@@ -111,12 +100,26 @@ def dataExport():
                     initStageDisplay(stageDisplay)
                     stageScreenInitialized = True
                 except:
-                    print("Stage screen initialisation failed")
-                
+                    print("Stage screen initialisation failed")                
 
         except Exception as e:
             print('Stage screen error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
             stageScreenInitialized = False
+
+        #PANEL
+        try:
+            stageData = writeStage(streams)
+            i2cBus.try_lock()
+            i2cBus.writeto(stageAdress, stageData)
+            temp = bytearray(1)
+            i2cBus.readfrom_into(stageAdress, temp)
+            readStage(streams, temp)
+            i2cBus.unlock()
+            #i2cBus.write_i2c_block_data(stageAdress, 0, stageData)
+            #readStage(streams, i2cBus.read_i2c_block_data(stageAdress, 0, 1))
+
+        except Exception as e:
+            print('Stage pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
         ''' 
 
         

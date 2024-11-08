@@ -9,7 +9,7 @@ from alarms import masterAlarm, masterCaution
 
 existingNodes = False
 
-IP = "192.168.0.101"
+IP = "192.168.0.100"
 
 class Part:
     name = None
