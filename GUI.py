@@ -9,7 +9,7 @@ from alarms import masterAlarm, masterCaution
 
 existingNodes = False
 
-IP = "192.168.0.100"
+IP = "192.168.0.104"
 
 class Part:
     name = None
@@ -128,6 +128,13 @@ class Streams:
         self.deltaSpeed = 0
         self.contact = False
         
+        self.lowAblator = False
+        self.lowPower = False
+        self.lowFuel = False
+        self.lowOxydizer = False
+        self.lowMonopropellant = False
+        self.lowAir = False
+
         self.createEngines()
         self.createLdgGears()
         self.createAutopilot()
@@ -163,6 +170,7 @@ class Streams:
         self.engineOVH = False
         self.meco = False
         self.gearsBroken = False
+        self.lowElec = False
 
         self.stageLocked = False
         
@@ -518,17 +526,29 @@ class Streams:
     def alarms_vigil(self):
         global masterCaution, masterAlarm
 
-        for resource in ('ElectricCharge', 'SolidFuel','MonoPropellant', 'LiquidFuel', 'Oxidizer', 'Ablator'): #For : tous les propellants du caution panel 
-            if (resource+"_max") in self.resources:                                                             #Si ce propellant existe (dans le vaisseau actuel)
-                if self.resources[f'{resource}_max'] != 0:                                                      #Si le max n'et pas nul (cas ou le reservoir vient d'être largué)
-                    quantity = self.resources[f'{resource}_amount']/self.resources[f'{resource}_max']           #Obtiens la quantité restante
-                    if quantity < 0.2:
-                        masterCaution.append("Low"+str(resource))                                               #Si quantité <20%, caution
+        for resource in ('ElectricCharge', 'SolidFuel','MonoPropellant', 'LiquidFuel', 'Oxidizer', 'Ablator', 'IntakeAir'): #For : tous les propellants du caution panel 
+            if (resource+"_max") in self.resources:                                                                         #Si ce propellant existe (dans le vaisseau actuel)
+                if self.resources[f'{resource}_max'] != 0:                                                                  #Si le max n'et pas nul (cas ou le reservoir vient d'être largué)
+                    quantity = self.resources[f'{resource}_amount']/self.resources[f'{resource}_max']                       #Obtiens la quantité restante
 
                     if quantity < 0.1:
-                        masterAlarm.append("Low"+str(resource))                                                 #Si quantité <10%, alarm
+                        masterAlarm.append("Low"+str(resource))                                                             #Si quantité <10%, alarm
+                        alarmLevel = 2
 
-            
+                    elif quantity < 0.2:
+                        masterCaution.append("Low"+str(resource))                                                           #Si quantité <20%, caution
+                        alarmLevel = 1
+
+                    elif quantity >= 0.2:                                                                                   #Si quantité >20%, supprimer alarme
+                        alarmLevel = 0
+
+                    
+                    if 'ElectricCharge' in resource: self.lowElec = alarmLevel
+                    elif 'MonoPropellant' in resource: self.lowMonopropellant = alarmLevel
+                    elif 'LiquidFuel' in resource: self.lowFuel = alarmLevel
+                    elif 'Oxidizer' in resource: self.lowOxydizer = alarmLevel
+                    elif 'Ablator' in resource: self.lowAblator = alarmLevel
+                    elif 'IntakeAir' in resource: self.lowAir = alarmLevel 
 
 class Application:
     def __init__(self, root):

@@ -18,7 +18,7 @@ def initInstruments(i2cBus):
     global servoMotors, servoTuning, Max_G
     Max_G = 0
 
-    servoTuning = [[259, 14], [252, 8], [259, 15], [263, 22], [15, 258], [260, 15], [17,250], [245,25]]
+    servoTuning = [[259, 14], [252, 8], [259, 15], [263, 22], [15, 258], [260, 15], [17,250], [250,25]]
 
     servoMotors = ServoKit(channels=16, i2c=i2cBus)
     

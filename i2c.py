@@ -52,15 +52,17 @@ def dataExport():
     while(1):
 
         #------------------- ANNUNCIATORS --------------------------
-        '''
+        
         try:
             annData = writeAnnunciator(streams)
-            i2cBus.write_i2c_block_data(annunciatorAdress, 0, annData)
+            i2cBus.try_lock()
+            i2cBus.writeto(annunciatorAdress, annData)
+            i2cBus.unlock()
 
         except Exception as e:
             print('Annunciator pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
 
-        '''
+        
 
         #------------------- LANDING GEAR --------------------------
         '''
@@ -74,7 +76,7 @@ def dataExport():
         
         '''
         #------------------- INSTRUMENTS LEFT --------------------------
-
+        '''
         try:
             if motorsInitialized == False:
                 initInstruments(i2cBus)
@@ -89,7 +91,7 @@ def dataExport():
                 writeInstR(streams)
             except Exception as e:
                 print('Left instruments pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
-
+        '''
         #------------------- STAGE --------------------------
         '''
         #SCREEN
@@ -111,6 +113,7 @@ def dataExport():
             stageData = writeStage(streams)
             i2cBus.try_lock()
             i2cBus.writeto(stageAdress, stageData)
+
             temp = bytearray(1)
             i2cBus.readfrom_into(stageAdress, temp)
             readStage(streams, temp)
