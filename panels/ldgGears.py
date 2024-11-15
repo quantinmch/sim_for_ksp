@@ -3,11 +3,12 @@ prev_received = [-1, -1,-1,-1]
 prev_toogleLdgGear = False
 
 def writeLdgGears(streams):
- 
+    
     temp = []
     for i in range(8):
         temp.append(0)
-
+    
+    
     if streams == None:
         temp[0] = 2
     else:
@@ -52,9 +53,10 @@ def writeLdgGears(streams):
         temp[3] = temp[4]
         temp[4] = reverse
 
+        
 
 
-    return temp
+    return bytearray(temp)
    
 
 def readLdgGears(streams, received):
@@ -82,7 +84,6 @@ def readLdgGears(streams, received):
                 streams.vessel.control.gear = toogleLdgGear
 
         if received[1] != prev_received[1]:
-            print(received [1])
             if received [1] > 2 or received [1] == 0: #Ni off ni disarm
                 if received[1] == 3: brakeForce = 0.2
                 elif received[1] == 4: brakeForce = 0.4  

@@ -49,6 +49,11 @@ def dataExport():
     draw.rectangle((0, 0, 32, 128), outline=0, fill=0)
     font = ImageFont.load_default()
 
+    annunciatorsDisconnect = False
+    gearsDisconnect = False
+    instrumentsLDisconnect = False
+    stageDisconnect = False
+
     while(1):
 
         #------------------- ANNUNCIATORS --------------------------
@@ -58,42 +63,54 @@ def dataExport():
             i2cBus.try_lock()
             i2cBus.writeto(annunciatorAdress, annData)
             i2cBus.unlock()
+            annunciatorsDisconnect = False
 
         except Exception as e:
-            print('Annunciator pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
+            if annunciatorsDisconnect == False : print('Annunciator pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
+            annunciatorsDisconnect = True
 
         
 
         #------------------- LANDING GEAR --------------------------
-        '''
+        
         try:
             ldgGearData = writeLdgGears(streams)
-            i2cBus.write_i2c_block_data(ldgGearsAdress, 0, ldgGearData)
-            readLdgGears(streams, i2cBus.read_i2c_block_data(ldgGearsAdress, 0, 4))
+            i2cBus.try_lock()
+            i2cBus.writeto(ldgGearsAdress, ldgGearData)
+            temp = bytearray(4)
+            i2cBus.readfrom_into(ldgGearsAdress, temp)
+            readLdgGears(streams, temp)
+            i2cBus.unlock()
+            #readLdgGears(streams, i2cBus.read_i2c_block_data(ldgGearsAdress, 0, 4))
+            gearsDisconnect = False
 
         except Exception as e:
-            print('Landing gear pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
+            if gearsDisconnect == False : print('Landing gear pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
+            gearsDisconnect = True
         
-        '''
         #------------------- INSTRUMENTS LEFT --------------------------
-        '''
+        
         try:
             if motorsInitialized == False:
                 initInstruments(i2cBus)
                 motorsInitialized = True
+                instrumentsLDisconnect = False
                 
         except Exception as e:
-            print('Motors initialisation error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
+            if instrumentsLDisconnect == False : print('Motors initialisation error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
             motorsInitialized = False
+            instrumentsLDisconnect = True
 
         if motorsInitialized == True:
             try:
                 writeInstR(streams)
+                instrumentsLDisconnect = False
             except Exception as e:
-                print('Left instruments pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
-        '''
+                if instrumentsLDisconnect == False : print('Left instruments pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
+                instrumentsLDisconnect = True
+                
         #------------------- STAGE --------------------------
-        '''
+        
         #SCREEN
         try:
             if stageScreenInitialized == False:
@@ -101,12 +118,15 @@ def dataExport():
                     stageDisplay = adafruit_ssd1306.SSD1306_I2C(128, 32, i2cBus)
                     initStageDisplay(stageDisplay)
                     stageScreenInitialized = True
+                    stageDisconnect = False
                 except:
-                    print("Stage screen initialisation failed")                
+                    if stageDisconnect == False : print("Stage screen initialisation failed")  
+                    stageDisconnect = True              
 
         except Exception as e:
-            print('Stage screen error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
+            if stageDisconnect == False : print('Stage screen error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
             stageScreenInitialized = False
+            stageDisconnect = True
 
         #PANEL
         try:
@@ -118,12 +138,11 @@ def dataExport():
             i2cBus.readfrom_into(stageAdress, temp)
             readStage(streams, temp)
             i2cBus.unlock()
-            #i2cBus.write_i2c_block_data(stageAdress, 0, stageData)
-            #readStage(streams, i2cBus.read_i2c_block_data(stageAdress, 0, 1))
+            stageDisconnect = False
 
         except Exception as e:
-            print('Stage pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
-        ''' 
+            if stageDisconnect == False : print('Stage pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
+            stageDisconnect = True
 
         
 
