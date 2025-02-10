@@ -1,9 +1,11 @@
 import time
 import pi3d
 from collections import deque
+import pygame.mixer as soundPlayer
 
 masterAlarm = deque([])
 masterCaution = deque([])
+playSound = deque([])
 
 class TextData(object):
     data = ""
@@ -23,6 +25,18 @@ class Alarms():
         self.showCaution = False
         self.showAlarm = False
 
+        soundPlayer.init(frequency=16000)
+
+        soundPlayer.set_num_channels(8)
+        self.sound = soundPlayer.Channel(5)
+
+        self.masterWarningSound = soundPlayer.Sound('/home/pi/Desktop/V0.4/sounds/Master_Warning.wav')
+        self.masterAlarmSound = soundPlayer.Sound('/home/pi/Desktop/V0.4/sounds/Master_Alarm.wav')
+        self.abortSound = soundPlayer.Sound('/home/pi/Desktop/V0.4/sounds/Abort.wav')
+        self.abortSafetySound = soundPlayer.Sound('/home/pi/Desktop/V0.4/sounds/Abort_safety.wav')
+        self.highGSound = soundPlayer.Sound('/home/pi/Desktop/V0.4/sounds/HighG.wav')
+        self.gearsSound = soundPlayer.Sound('/home/pi/Desktop/V0.4/sounds/Gears.wav')
+
     def display(self):
         if len(masterCaution) >  0:
             masterCaution.clear()
@@ -33,9 +47,32 @@ class Alarms():
             masterAlarm.clear()
             self.showAlarm = True
             
+        if len(playSound) >  0:
+            alarmName = playSound.popleft()
 
-        if self.showCaution == True: self.masterCautionText.draw()
-        if self.showAlarm == True: self.masterAlarmText.draw()
+            if alarmName == "highG" and self.sound.get_sound() != self.highGSound:
+                self.sound.play(self.highGSound)
+
+            elif alarmName == "gears" and self.sound.get_sound() != self.gearsSound:
+                self.sound.play(self.gearsSound)
+
+            elif alarmName == "abort" and self.sound.get_sound() != self.abortSound:
+                self.sound.play(self.abortSound)
+
+            elif alarmName == "abortSafety" and self.sound.get_sound() != self.abortSafetySound:
+                self.sound.play(self.abortSafetySound)
+
+        if self.showCaution == True: 
+            self.masterCautionText.draw()
+            if self.sound.get_sound() != self.masterWarningSound and self.sound.get_sound() != self.masterAlarmSound:
+                soundPlayer.stop()
+                self.sound.play(self.masterWarningSound)
+
+        if self.showAlarm == True: 
+            self.masterAlarmText.draw()
+            if self.sound.get_sound() != self.masterAlarmSound:
+                soundPlayer.stop()
+                self.sound.play(self.masterAlarmSound, loops=-1)
 
 
         
