@@ -9,6 +9,7 @@ from panels.annunciator import writeAnnunciator
 from panels.instruments import writeInstrL, initInstruments, writeInstR
 from panels.ldgGears import writeLdgGears, readLdgGears
 from panels.stage import writeStage, readStage, initStageDisplay
+from panels.abort import writeAbort, readAbort
 
 import time
 import sys
@@ -16,7 +17,9 @@ import sys
 spdHdgAdress = 0x13
 annunciatorAdress = 0x08
 ldgGearsAdress = 0x10
+abortAdress = 0x11
 stageAdress = 0x12
+
 
 i2cBus = I2C(3)
 time.sleep(2) #wait here to avoid 121 IO Error
@@ -46,6 +49,7 @@ def dataExport():
     gearsDisconnect = False
     instrumentsLDisconnect = False
     stageDisconnect = False
+    abortDisconnect = False
 
     while(1):
 
@@ -82,7 +86,7 @@ def dataExport():
             gearsDisconnect = True
         '''
         #------------------- INSTRUMENTS LEFT --------------------------
-        
+        '''
         try:
             if motorsInitialized == False:
                 initInstruments(i2cBus)
@@ -101,7 +105,7 @@ def dataExport():
             except Exception as e:
                 if instrumentsLDisconnect == False : print('Left instruments pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
                 instrumentsLDisconnect = True
-                
+        '''        
         #------------------- STAGE --------------------------
         '''
         #SCREEN
@@ -138,5 +142,21 @@ def dataExport():
             stageDisconnect = True
 
         '''
+
+        #------------------- ABORT --------------------------
+        try:
+            abortData = writeAbort(streams)
+            i2cBus.try_lock()
+            i2cBus.writeto(abortAdress, abortData)
+
+            temp = bytearray(1)
+            i2cBus.readfrom_into(abortAdress, temp)
+            readAbort(streams, temp)
+            i2cBus.unlock()
+            abortDisconnect = False
+
+        except Exception as e:
+            if abortDisconnect == False : print('Abort pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
+            abortDisconnect = True
 
         time.sleep(1/25)

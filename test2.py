@@ -12,12 +12,11 @@ import adafruit_ssd1306
 from adafruit_extended_bus import ExtendedI2C as I2C
 
 temp = []
-for i in range(4):
+for i in range(3):
     temp.append(0)
 
-temp[3] = 1 #ENABLE = ON
-temp[1] = 5
-temp[2] = 0b1000
+temp[2] = 1 #ENABLE = ON
+temp[1] = 0b1000
 temp[0] = 0 #NECESSARY TO EMULATE SMBUS
 
 test=bytearray(1)
@@ -28,7 +27,8 @@ test=bytearray(1)
 while(True):
     i2c=I2C(3)
     i2c.try_lock()
-    i2c.readfrom_into(0x12, test)
+    i2c.writeto(0x11, bytearray(temp))
+    i2c.readfrom_into(0x11, test)
     print(test)
     i2c.unlock()
     i2c.deinit()

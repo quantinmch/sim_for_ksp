@@ -174,6 +174,7 @@ class Streams:
         self.lowElec = False
 
         self.stageLocked = False
+        self.abortLocked = False
         
     def createAutopilot(self):
         try:
