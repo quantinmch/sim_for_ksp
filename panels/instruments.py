@@ -22,9 +22,19 @@ def initInstruments(i2cBus):
 
     servoMotors = ServoKit(channels=16, i2c=i2cBus)
     
+    #Gauges servos
     for i in range (NBServos):
         servoMotors.servo[i].set_pulse_width_range(300, 2700)
         servoMotors.servo[i].actuation_range = 270
+
+    #Vspeed Servo
+    servoMotors.servo[8].set_pulse_width_range(470, 2460)
+    servoMotors.servo[8].actuation_range = 200
+
+    #Airspeed servo
+    servoMotors.servo[9].set_pulse_width_range(595, 2400)
+    servoMotors.servo[9].actuation_range = 240
+    
 
 
     
@@ -91,4 +101,25 @@ def writeInstR(streams):
         percentage = Max_G/14
         servoRange = servoTuning[7][0] - servoTuning[7][1]
         servoMotors.servo[7].angle = servoRange-(percentage*servoRange)+servoTuning[7][1]
+
+
+        #AirSpeed
+        AirSpeed = int(streams.speed())
+        if AirSpeed < 40:
+            servoMotors.servo[9].angle = 0
+        elif AirSpeed > 260:
+            servoMotors.servo[9].angle = 240
+        else:
+            servoMotors.servo[9].angle = AirSpeed-20
+
+        #VerticalSpeed
+        VerticalSpeed = int(streams.VSpeed())
+        if VerticalSpeed < -100:
+            servoMotors.servo[8].angle = 0
+        elif VerticalSpeed > 100:
+            servoMotors.servo[8].angle = 200
+        else:
+            servoMotors.servo[8].angle = 100+VerticalSpeed
+            
+        
         

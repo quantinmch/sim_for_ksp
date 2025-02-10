@@ -9,7 +9,7 @@ from alarms import masterAlarm, masterCaution
 
 existingNodes = False
 
-IP = "192.168.0.104"
+IP = "192.168.0.100"
 
 class Part:
     name = None
@@ -120,6 +120,7 @@ class Streams:
 
         self.throttle = conn.add_stream(getattr, vessel.control, 'throttle')
         self.speed = conn.add_stream(getattr, vessel.flight(srfRefFrame), 'speed')
+        self.VSpeed = conn.add_stream(getattr, vessel.flight(srfRefFrame), 'vertical_speed')
         self.altitude = conn.add_stream(getattr, vessel.flight(), 'surface_altitude')
         self.meanAltitude = conn.add_stream(getattr, vessel.flight(), 'mean_altitude')
 

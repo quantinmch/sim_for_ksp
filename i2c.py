@@ -21,13 +21,6 @@ stageAdress = 0x12
 i2cBus = I2C(3)
 time.sleep(2) #wait here to avoid 121 IO Error
 
-#                       A MODIFIER :
-#           FAIRE FONCTIONNER LE SSD1306 AVEC SMBUS
-#        Car SMBUS pas compatible avec adafruit_ssd1306
-#
-#                      Voir test.py
-
-
 
 
 global streams 
@@ -57,7 +50,7 @@ def dataExport():
     while(1):
 
         #------------------- ANNUNCIATORS --------------------------
-        
+        '''
         try:
             annData = writeAnnunciator(streams)
             i2cBus.try_lock()
@@ -87,7 +80,7 @@ def dataExport():
         except Exception as e:
             if gearsDisconnect == False : print('Landing gear pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
             gearsDisconnect = True
-        
+        '''
         #------------------- INSTRUMENTS LEFT --------------------------
         
         try:
@@ -110,7 +103,7 @@ def dataExport():
                 instrumentsLDisconnect = True
                 
         #------------------- STAGE --------------------------
-        
+        '''
         #SCREEN
         try:
             if stageScreenInitialized == False:
@@ -144,6 +137,6 @@ def dataExport():
             if stageDisconnect == False : print('Stage pannel error on line {}'.format(sys.exc_info()[-1].tb_lineno), type(e).__name__, e)
             stageDisconnect = True
 
-        
+        '''
 
         time.sleep(1/25)
