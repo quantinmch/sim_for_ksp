@@ -2,10 +2,18 @@ import time
 import pi3d
 from collections import deque
 import pygame.mixer as soundPlayer
+import logging
 
 masterAlarm = deque([])
 masterCaution = deque([])
 playSound = deque([])
+
+logging.basicConfig(
+    filename="/home/pi/Desktop/V0.4/logs/alarms.log",
+    filemode='w',
+    format='%(asctime)s %(levelname)-8s %(message)s',
+    level=logging.INFO,
+    datefmt='%Y-%m-%d %H:%M:%S')
 
 class TextData(object):
     data = ""
@@ -37,13 +45,17 @@ class Alarms():
         self.highGSound = soundPlayer.Sound('/home/pi/Desktop/V0.4/sounds/HighG.wav')
         self.gearsSound = soundPlayer.Sound('/home/pi/Desktop/V0.4/sounds/Gears.wav')
 
+        logging.info('Program started')
+
     def display(self):
         if len(masterCaution) >  0:
+            logging.warning(masterCaution.popleft())
             masterCaution.clear()
             self.showCaution = True
             
 
         if len(masterAlarm) >  0:
+            logging.error(masterAlarm.popleft())
             masterAlarm.clear()
             self.showAlarm = True
             
