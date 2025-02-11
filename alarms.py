@@ -50,17 +50,18 @@ class Alarms():
         if len(playSound) >  0:
             alarmName = playSound.popleft()
 
-            if alarmName == "highG" and self.sound.get_sound() != self.highGSound:
-                self.sound.play(self.highGSound)
+            if self.sound.get_sound() != self.masterWarningSound and self.sound.get_sound() != self.masterAlarmSound:
+                if alarmName == "highG" and self.sound.get_sound() != self.highGSound:
+                    self.sound.play(self.highGSound)
 
-            elif alarmName == "gears" and self.sound.get_sound() != self.gearsSound:
-                self.sound.play(self.gearsSound)
+                elif alarmName == "gears" and self.sound.get_sound() != self.gearsSound:
+                    self.sound.play(self.gearsSound)
 
-            elif alarmName == "abort" and self.sound.get_sound() != self.abortSound:
-                self.sound.play(self.abortSound)
+                elif alarmName == "abort" and self.sound.get_sound() != self.abortSound:
+                    self.sound.play(self.abortSound)
 
-            elif alarmName == "abortSafety" and self.sound.get_sound() != self.abortSafetySound:
-                self.sound.play(self.abortSafetySound)
+                elif alarmName == "abortSafety" and self.sound.get_sound() != self.abortSafetySound:
+                    self.sound.play(self.abortSafetySound)
 
         if self.showCaution == True: 
             self.masterCautionText.draw()

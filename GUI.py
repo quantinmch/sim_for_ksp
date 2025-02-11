@@ -5,7 +5,7 @@ import krpc
 from functools import partial
 import time
 from msgbox import log, cmd
-from alarms import masterAlarm, masterCaution
+from alarms import masterAlarm, masterCaution, playSound
 
 existingNodes = False
 
@@ -26,6 +26,7 @@ class Part:
 class Streams:
     def __init__(self, conn, vessel):
         self.prev_EC = None
+        self.prev_abortLocked = False
         self.try_launch_clamp = True
         self.conn = conn
         self.vessel = vessel
@@ -111,6 +112,7 @@ class Streams:
         self.lights = conn.add_stream(getattr, vessel.control, 'lights')
         self.gears = conn.add_stream(getattr, vessel.control, 'gear')
         self.brakes = conn.add_stream(getattr, vessel.control, 'brakes')
+        self.abort = conn.add_stream(getattr, vessel.control, 'abort')
 
         self.nodes = conn.add_stream(getattr, vessel.control, 'nodes')
         self.nodes.add_callback(self.nodes_update)
@@ -476,8 +478,20 @@ class Streams:
 
         if self.g_force() > 5:
             self.highG = True
+            playSound.append("highG")
         else:
             self.highG = False
+
+        if self.altitude() < 1000 and self.VSpeed() < -10 and self.gears() == False:
+            playSound.append("gears")
+
+        if self.prev_abortLocked != self.abortLocked:
+            playSound.append("abortSafety")
+        
+        self.prev_abortLocked = self.abortLocked
+
+        if self.abort() == True:
+            playSound.append("abort")
 
         if self.altitude() > 5 and self.altitude() < 100:
             self.lowAlt = True
